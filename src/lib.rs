@@ -1,14 +1,17 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+mod commands;
+mod data_types;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+use crate::commands::valq_cmd;
+use crate::data_types::VALQ_TYPE;
+use valkey_module::alloc::ValkeyAlloc;
+use valkey_module::valkey_module;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+valkey_module! {
+    name: "valq",
+    version: 1,
+    allocator: (ValkeyAlloc, ValkeyAlloc),
+    data_types: [VALQ_TYPE],
+    commands: [
+        ["valq", valq_cmd, "", 0, 0, 0],
+    ],
 }
