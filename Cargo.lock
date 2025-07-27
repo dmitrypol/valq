@@ -474,9 +474,9 @@ checksum = "8c1f860d7d29cf02cb2f3f359fd35991af3d30bac52c57d265a3c461074cb4dc"
 
 [[package]]
 name = "valkey-module"
-version = "0.1.9"
+version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "077cd0b09b9972f6b5b5b880cecbef5cfe7257cafca7c229f2cc063613bcc9c3"
+checksum = "ddcf64d7fc76ed23ab50df3de196712c6bab9ab14ac209616ddba6d8ab38c2d1"
 dependencies = [
  "backtrace",
  "bindgen",

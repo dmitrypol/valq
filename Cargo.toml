@@ -4,8 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-valkey-module = { version = "0.1.9" }
-#valkey-module-macros = { version = "0.1.9" }
+valkey-module = { version = "0.1.10" }
+#valkey-module-macros = { version = "0.1.10" }
 
 [lib]
 crate-type = ["cdylib"]
+
+[lints.clippy]
+unwrap_used = "forbid"

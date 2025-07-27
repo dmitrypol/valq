@@ -1,11 +1,11 @@
-use crate::data_types::{VALQ_TYPE, ValqType};
+use crate::data_types::{VALQ_TYPE, ValqMsg, ValqType};
 use std::collections::VecDeque;
 use valkey_module::{Context, NextArg, ValkeyError, ValkeyResult, ValkeyString, ValkeyValue};
 
 pub(crate) fn valq_cmd(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     if args.len() == 1 {
         return help();
-    };
+    }
     let mut args = args.into_iter().skip(1);
     let subcmd = args.next_string()?;
     let args: Vec<ValkeyString> = args.collect();
@@ -29,17 +29,22 @@ fn push(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     let current_value = key.get_value::<ValqType>(&VALQ_TYPE)?;
     match current_value {
         Some(tmp) => {
+            // increment id_sequence
+            tmp.id_sequence += 1;
+            let id = tmp.id_sequence;
             // add new value to the queue
-            tmp.data_mut().push_back(value_arg);
+            tmp.data_mut().push_back(ValqMsg::new(id, value_arg));
+            Ok(id.to_string().into())
         }
         None => {
             // create new queue with the value
-            let mut value = VecDeque::new();
-            value.push_back(value_arg);
+            let mut value: VecDeque<ValqMsg> = VecDeque::new();
+            let id = 1;
+            value.push_back(ValqMsg::new(id, value_arg));
             key.set_value(&VALQ_TYPE, ValqType::new(value))?;
+            Ok(id.to_string().into())
         }
     }
-    Ok("OK".into())
 }
 
 fn pop(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
@@ -52,9 +57,9 @@ fn pop(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     let current_value = key.get_value::<ValqType>(&VALQ_TYPE)?;
     match current_value {
         Some(tmp) => {
-            let data: &mut VecDeque<String> = tmp.data_mut();
+            let data: &mut VecDeque<ValqMsg> = tmp.data_mut();
             let value = data.pop_front().unwrap_or_default();
-            Ok(value.into())
+            Ok(value.body().into())
         }
         None => Ok("".into()),
     }

@@ -3,18 +3,36 @@ use std::os::raw::c_void;
 use valkey_module::logging::log_notice;
 use valkey_module::{RedisModuleTypeMethods, native_types::ValkeyType, raw};
 
+#[derive(Debug, Clone, Default)]
+pub(crate) struct ValqMsg {
+    id: u64,
+    body: String,
+}
+impl ValqMsg {
+    pub(crate) fn new(id: u64, body: String) -> Self {
+        Self { id, body }
+    }
+    pub(crate) fn body(&self) -> &String {
+        &self.body
+    }
+}
+
 #[derive(Debug, Clone)]
 pub(crate) struct ValqType {
-    data: VecDeque<String>,
+    pub(crate) id_sequence: u64,
+    data: VecDeque<ValqMsg>,
 }
 impl ValqType {
-    pub(crate) fn new(data: VecDeque<String>) -> Self {
-        Self { data }
+    pub(crate) fn new(data: VecDeque<ValqMsg>) -> Self {
+        Self {
+            id_sequence: 1,
+            data,
+        }
     }
-    pub(crate) fn data(&self) -> &VecDeque<String> {
+    pub(crate) fn data(&self) -> &VecDeque<ValqMsg> {
         &self.data
     }
-    pub(crate) fn data_mut(&mut self) -> &mut VecDeque<String> {
+    pub(crate) fn data_mut(&mut self) -> &mut VecDeque<ValqMsg> {
         &mut self.data
     }
 }
@@ -59,13 +77,19 @@ extern "C" fn rdb_save(rdb: *mut raw::RedisModuleIO, value: *mut c_void) {
         return;
     }
     let item = unsafe { &*value.cast::<ValqType>() };
+    // save and load must be in the same order
+    // save id_sequence
+    raw::save_unsigned(rdb, item.id_sequence);
     // save the size of the VecDeque
     raw::save_unsigned(rdb, item.data.len() as u64);
-    // save each string in the VecDeque
-    item.data.iter().for_each(|str| {
-        raw::save_string(rdb, str.as_str());
+    // save each message in the VecDeque
+    item.data.iter().for_each(|msg| {
+        // save id
+        raw::save_unsigned(rdb, msg.id);
+        // save body
+        raw::save_string(rdb, msg.body.as_str());
     });
-    log_notice(&format!("rdb_save: {:?}", item));
+    log_notice(format!("rdb_save: {:?}", item));
 }
 
 extern "C" fn rdb_load(rdb: *mut raw::RedisModuleIO, _encver: i32) -> *mut c_void {
@@ -73,21 +97,26 @@ extern "C" fn rdb_load(rdb: *mut raw::RedisModuleIO, _encver: i32) -> *mut c_voi
         return std::ptr::null_mut();
     }
     let mut valq = ValqType::new(VecDeque::new());
-    // load the size of the VecDeque
-    let q_size = match raw::load_unsigned(rdb) {
-        Ok(tmp) => tmp as usize,
-        Err(_) => return std::ptr::null_mut(),
+    // save and load must be in the same order
+    // load id_sequence
+    valq.id_sequence = match raw::load_unsigned(rdb) {
+        Ok(tmp) => tmp,
+        Err(_err) => return std::ptr::null_mut(),
     };
-    for count in 0..q_size {
-        // load each string in the VecDeque
-        match raw::load_string(rdb) {
-            Ok(tmp) => valq.data_mut().push_back(tmp.to_string()),
-            Err(err) => {
-                log_notice(&format!("rdb_load error: {}, count: {}", err, count));
-                return std::ptr::null_mut();
-            }
+    // load the size of the VecDeque
+    let q_size = raw::load_unsigned(rdb).unwrap_or(0) as usize;
+    for _ in 0..q_size {
+        // load each message in the VecDeque
+        let id = match raw::load_unsigned(rdb) {
+            Ok(tmp) => tmp,
+            Err(_err) => return std::ptr::null_mut(),
         };
+        let body = match raw::load_string(rdb) {
+            Ok(tmp) => tmp.to_string(),
+            Err(_err) => return std::ptr::null_mut(),
+        };
+        valq.data_mut().push_back(ValqMsg::new(id, body));
     }
-    log_notice(&format!("rdb_load: {:?}", valq));
+    log_notice(format!("rdb_load: {:?}", valq));
     Box::into_raw(Box::new(valq)) as *mut c_void
 }
