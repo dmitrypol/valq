@@ -23,10 +23,10 @@ pub(crate) struct ValqType {
     msgs: VecDeque<ValqMsg>,
 }
 impl ValqType {
-    pub(crate) fn new(msgs: VecDeque<ValqMsg>) -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             id_sequence: 1,
-            msgs,
+            msgs: VecDeque::new(),
         }
     }
     pub(crate) fn msgs(&self) -> &VecDeque<ValqMsg> {
@@ -80,9 +80,9 @@ extern "C" fn rdb_save(rdb: *mut raw::RedisModuleIO, value: *mut c_void) {
     // save and load must be in the same order
     // save id_sequence
     raw::save_unsigned(rdb, item.id_sequence);
-    // save the size of the VecDeque
+    // save the size of the msgs VecDeque
     raw::save_unsigned(rdb, item.msgs.len() as u64);
-    // save each message in the VecDeque
+    // save each message in the msgs VecDeque
     item.msgs.iter().for_each(|msg| {
         // save id
         raw::save_unsigned(rdb, msg.id);
@@ -96,17 +96,17 @@ extern "C" fn rdb_load(rdb: *mut raw::RedisModuleIO, _encver: i32) -> *mut c_voi
     if rdb.is_null() {
         return std::ptr::null_mut();
     }
-    let mut valq = ValqType::new(VecDeque::new());
+    let mut valq = ValqType::new();
     // save and load must be in the same order
     // load id_sequence
     valq.id_sequence = match raw::load_unsigned(rdb) {
         Ok(tmp) => tmp,
         Err(_err) => return std::ptr::null_mut(),
     };
-    // load the size of the VecDeque
+    // load the size of the msgs VecDeque
     let q_size = raw::load_unsigned(rdb).unwrap_or(0) as usize;
     for _ in 0..q_size {
-        // load each message in the VecDeque
+        // load each message in the msgs VecDeque
         let id = match raw::load_unsigned(rdb) {
             Ok(tmp) => tmp,
             Err(_err) => return std::ptr::null_mut(),

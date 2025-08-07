@@ -10,10 +10,42 @@ pub(crate) fn valq_cmd(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     let subcmd = args.next_string()?;
     let args: Vec<ValkeyString> = args.collect();
     match subcmd.to_lowercase().as_str() {
+        "create" => create(ctx, args),
+        "delete" => delete(ctx, args),
         "push" => push(ctx, args),
         "pop" => pop(ctx, args),
         "len" => len(ctx, args),
         _ => help(),
+    }
+}
+
+fn create(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
+    if args.len() != 1 {
+        return Err(ValkeyError::WrongArity);
+    }
+    let key = ctx.open_key_writable(&args[0]);
+    let value = key.get_value::<ValqType>(&VALQ_TYPE)?;
+    match value {
+        Some(_) => {
+            // queue already exists
+            Err(ValkeyError::Str("q exists"))
+        }
+        None => {
+            // create a new queue
+            key.set_value(&VALQ_TYPE, ValqType::new())?;
+            Ok("created q".into())
+        }
+    }
+}
+
+fn delete(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
+    if args.len() != 1 {
+        return Err(ValkeyError::WrongArity);
+    }
+    let key = ctx.open_key_writable(&args[0]);
+    match key.delete() {
+        Ok(_) => Ok("deleted q".into()),
+        Err(err) => Err(ValkeyError::String(format!("delete q failed: {}", err))),
     }
 }
 
@@ -36,14 +68,7 @@ fn push(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
             tmp.msgs_mut().push_back(ValqMsg::new(id, value_arg));
             Ok(id.to_string().into())
         }
-        None => {
-            // create new queue with the value
-            let mut value: VecDeque<ValqMsg> = VecDeque::new();
-            let id = 1;
-            value.push_back(ValqMsg::new(id, value_arg));
-            key.set_value(&VALQ_TYPE, ValqType::new(value))?;
-            Ok(id.to_string().into())
-        }
+        None => Err(ValkeyError::Str("create the queue")),
     }
 }
 
@@ -61,7 +86,7 @@ fn pop(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
             let value = data.pop_front().unwrap_or_default();
             Ok(value.body().into())
         }
-        None => Ok("".into()),
+        None => Err(ValkeyError::Str("invalid queue")),
     }
 }
 
@@ -82,6 +107,8 @@ fn len(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
 fn help() -> ValkeyResult {
     let output: Vec<ValkeyValue> = vec![
         "valq - top level command".into(),
+        "valq create - crate new q".into(),
+        "valq delete - delete q".into(),
         "valq push - push message to q".into(),
         "valq pop - get message from q".into(),
         "valq help - display this message".into(),
