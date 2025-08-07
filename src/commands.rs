@@ -33,7 +33,7 @@ fn push(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
             tmp.id_sequence += 1;
             let id = tmp.id_sequence;
             // add new value to the queue
-            tmp.data_mut().push_back(ValqMsg::new(id, value_arg));
+            tmp.msgs_mut().push_back(ValqMsg::new(id, value_arg));
             Ok(id.to_string().into())
         }
         None => {
@@ -57,7 +57,7 @@ fn pop(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     let current_value = key.get_value::<ValqType>(&VALQ_TYPE)?;
     match current_value {
         Some(tmp) => {
-            let data: &mut VecDeque<ValqMsg> = tmp.data_mut();
+            let data: &mut VecDeque<ValqMsg> = tmp.msgs_mut();
             let value = data.pop_front().unwrap_or_default();
             Ok(value.body().into())
         }
@@ -74,7 +74,7 @@ fn len(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     let key = ctx.open_key(&key_arg);
     let current_value = key.get_value::<ValqType>(&VALQ_TYPE)?;
     match current_value {
-        Some(tmp) => Ok(tmp.data().len().into()),
+        Some(tmp) => Ok(tmp.msgs().len().into()),
         None => Ok("0".into()),
     }
 }
