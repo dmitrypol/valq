@@ -1,0 +1,33 @@
+use crate::data_types::VALQ_TYPE;
+use crate::structs::ValqType;
+use valkey_module::{Context, ValkeyError, ValkeyResult, ValkeyString};
+
+pub(crate) fn create(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
+    if args.len() != 1 {
+        return Err(ValkeyError::WrongArity);
+    }
+    let key = ctx.open_key_writable(&args[0]);
+    let value = key.get_value::<ValqType>(&VALQ_TYPE)?;
+    match value {
+        Some(_) => {
+            // queue already exists
+            Err(ValkeyError::Str("q exists"))
+        }
+        None => {
+            // create a new queue
+            key.set_value(&VALQ_TYPE, ValqType::new())?;
+            Ok("created q".into())
+        }
+    }
+}
+
+pub(crate) fn delete(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
+    if args.len() != 1 {
+        return Err(ValkeyError::WrongArity);
+    }
+    let key = ctx.open_key_writable(&args[0]);
+    match key.delete() {
+        Ok(_) => Ok("deleted q".into()),
+        Err(err) => Err(ValkeyError::String(format!("delete q failed: {}", err))),
+    }
+}
