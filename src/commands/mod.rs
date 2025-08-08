@@ -31,7 +31,19 @@ fn help() -> ValkeyResult {
         "valq delete - delete q".into(),
         "valq push - push message to q".into(),
         "valq pop - get message from q".into(),
+        "valq ack - ack message completion for q".into(),
         "valq help - display this message".into(),
     ];
     Ok(output.into())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_help() {
+        let result = help();
+        assert!(result.is_ok());
+    }
 }

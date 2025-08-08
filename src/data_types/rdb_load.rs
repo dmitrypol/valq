@@ -9,7 +9,7 @@ pub(crate) extern "C" fn rdb_load(
     if rdb.is_null() {
         return std::ptr::null_mut();
     }
-    let mut valq = ValqType::new();
+    let mut valq = ValqType::default();
     // save and load must be in the same order
     // load id_sequence
     valq.set_id_sequence(match valkey_module::load_unsigned(rdb) {
@@ -47,4 +47,15 @@ pub(crate) extern "C" fn rdb_load(
     }
     log_notice(format!("rdb_load: {:?}", valq));
     Box::into_raw(Box::new(valq)) as *mut c_void
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rdb_load_null_pointer() {
+        let result = rdb_load(std::ptr::null_mut(), 0);
+        assert!(result.is_null());
+    }
 }

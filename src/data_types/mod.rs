@@ -39,3 +39,22 @@ extern "C" fn free(value: *mut c_void) {
         let _ = Box::from_raw(value.cast::<ValqType>());
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn free_null_pointer() {
+        free(std::ptr::null_mut());
+        // ensuring no panic occurs
+    }
+
+    #[test]
+    fn free_non_null_pointer() {
+        let valq = Box::new(ValqType::default());
+        let raw_ptr = Box::into_raw(valq);
+        free(raw_ptr.cast());
+        // ensuring no memory leaks or panics occur
+    }
+}

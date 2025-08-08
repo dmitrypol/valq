@@ -15,7 +15,7 @@ pub(crate) fn create(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
         }
         None => {
             // create a new queue
-            key.set_value(&VALQ_TYPE, ValqType::new())?;
+            key.set_value(&VALQ_TYPE, ValqType::default())?;
             Ok("created q".into())
         }
     }
