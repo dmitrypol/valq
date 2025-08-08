@@ -1,4 +1,5 @@
-use crate::data_types::{VALQ_TYPE, ValqMsg, ValqType};
+use crate::data_types::VALQ_TYPE;
+use crate::structs::{ValqMsg, ValqType};
 use std::collections::VecDeque;
 use valkey_module::{Context, NextArg, ValkeyError, ValkeyResult, ValkeyString, ValkeyValue};
 
@@ -62,8 +63,8 @@ fn push(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     match current_value {
         Some(tmp) => {
             // increment id_sequence
-            tmp.id_sequence += 1;
-            let id = tmp.id_sequence;
+            let id = tmp.id_sequence() + 1;
+            tmp.set_id_sequence(id);
             // add new value to the queue
             tmp.msgs_mut().push_back(ValqMsg::new(id, value_arg));
             Ok(id.to_string().into())

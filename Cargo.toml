@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
+getset = "0.1.6"
 valkey-module = { version = "0.1.10" }
 #valkey-module-macros = { version = "0.1.10" }
 

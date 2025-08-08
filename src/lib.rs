@@ -1,5 +1,6 @@
 mod commands;
 mod data_types;
+mod structs;
 
 use crate::commands::valq_cmd;
 use crate::data_types::VALQ_TYPE;
