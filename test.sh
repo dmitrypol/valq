@@ -21,6 +21,8 @@ valkey-cli -3 valq pop q1
 valkey-cli -3 valq pop q1
 valkey-cli -3 valq pop q1
 valkey-cli -3 valq len q1
+valkey-cli -3 valq ack q1 1
+valkey-cli -3 valq ack q1 100
 valkey-cli -3 valq delete q1
 echo "--------------- test q2:"
 valkey-cli -3 valq create q2

@@ -1,5 +1,5 @@
 use getset::{Getters, MutGetters, Setters};
-use std::collections::VecDeque;
+use std::collections::{HashMap, VecDeque};
 
 #[derive(Debug, Clone, Default, Getters)]
 pub(crate) struct ValqMsg {
@@ -21,6 +21,8 @@ pub(crate) struct ValqType {
     id_sequence: u64,
     #[getset(get = "pub", get_mut = "pub")]
     msgs: VecDeque<ValqMsg>,
+    #[getset(get = "pub", get_mut = "pub")]
+    msgs_in_flight: HashMap<u64, String>,
 }
 
 impl ValqType {
@@ -28,6 +30,7 @@ impl ValqType {
         Self {
             id_sequence: 1,
             msgs: VecDeque::new(),
+            msgs_in_flight: HashMap::new(),
         }
     }
 }

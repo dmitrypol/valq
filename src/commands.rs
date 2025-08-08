@@ -15,6 +15,7 @@ pub(crate) fn valq_cmd(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
         "delete" => delete(ctx, args),
         "push" => push(ctx, args),
         "pop" => pop(ctx, args),
+        "ack" => ack(ctx, args),
         "len" => len(ctx, args),
         _ => help(),
     }
@@ -84,8 +85,46 @@ fn pop(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     match current_value {
         Some(tmp) => {
             let data: &mut VecDeque<ValqMsg> = tmp.msgs_mut();
-            let value = data.pop_front().unwrap_or_default();
-            Ok(value.body().into())
+            match data.pop_front() {
+                Some(msg) => {
+                    // store the message to msgs_in_flight
+                    tmp.msgs_in_flight_mut()
+                        .insert(*msg.id(), msg.body().clone());
+                    // return the message body
+                    Ok(msg.body().into())
+                }
+                None => {
+                    // queue is empty
+                    Ok("".into())
+                }
+            }
+        }
+        None => Err(ValkeyError::Str("invalid queue")),
+    }
+}
+
+fn ack(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
+    if args.len() != 2 {
+        return Err(ValkeyError::WrongArity);
+    }
+    let mut args = args.into_iter();
+    let key_arg = args.next_arg()?;
+    let msg_id_arg = args.next_u64()?;
+    let key = ctx.open_key_writable(&key_arg);
+    let current_value = key.get_value::<ValqType>(&VALQ_TYPE)?;
+    match current_value {
+        Some(tmp) => {
+            // try to remove the message from msgs_in_flight
+            match tmp.msgs_in_flight_mut().remove(&msg_id_arg) {
+                Some(_) => {
+                    // ack message
+                    Ok("ack".into())
+                }
+                None => {
+                    // message not found in msgs_in_flight
+                    Err(ValkeyError::Str("message not found in flight"))
+                }
+            }
         }
         None => Err(ValkeyError::Str("invalid queue")),
     }
