@@ -1,4 +1,5 @@
-use crate::structs::{ValqMsg, ValqType};
+use crate::structs::valq_msg::ValqMsg;
+use crate::structs::valq_type::ValqType;
 use std::os::raw::c_void;
 use valkey_module::logging::log_notice;
 

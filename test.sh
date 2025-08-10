@@ -1,6 +1,7 @@
 cargo fmt
 cargo b
 cargo test --all --features enable-system-alloc
+#cargo llvm-cov --open --features enable-system-alloc
 # run via valkey-cli
 valkey-server --loadmodule ./target/debug/libvalq.dylib --daemonize yes #--enable-module-command yes --save ""
 sleep 1

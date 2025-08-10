@@ -1,4 +1,4 @@
-use crate::structs::ValqType;
+use crate::structs::valq_type::ValqType;
 use std::os::raw::c_void;
 use valkey_module::{RedisModuleTypeMethods, native_types::ValkeyType};
 

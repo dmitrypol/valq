@@ -1,5 +1,5 @@
 use crate::data_types::VALQ_TYPE;
-use crate::structs::ValqType;
+use crate::structs::valq_type::ValqType;
 use valkey_module::{Context, NextArg, ValkeyError, ValkeyResult, ValkeyString};
 
 pub(crate) fn ack(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {

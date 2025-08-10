@@ -1,5 +1,6 @@
 use crate::data_types::VALQ_TYPE;
-use crate::structs::{ValqMsg, ValqType};
+use crate::structs::valq_msg::ValqMsg;
+use crate::structs::valq_type::ValqType;
 use std::collections::VecDeque;
 use valkey_module::{Context, NextArg, ValkeyError, ValkeyResult, ValkeyString};
 
