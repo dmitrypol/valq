@@ -21,7 +21,7 @@ pub(crate) fn pop(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
                     tmp.msgs_in_flight_mut()
                         .insert(*msg.id(), msg.body().clone());
                     // return the message body
-                    Ok(msg.body().into())
+                    Ok(msg.into())
                 }
                 None => {
                     // queue is empty

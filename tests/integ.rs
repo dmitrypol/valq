@@ -63,10 +63,10 @@ fn test_valq() -> anyhow::Result<()> {
 
     let test: String = redis::cmd("valq").arg(&["len", "q1"]).query(&mut con)?;
     assert_eq!(test, "2");
-    let test: String = redis::cmd("valq").arg(&["pop", "q1"]).query(&mut con)?;
-    assert_eq!(test, "m1");
-    let test: String = redis::cmd("valq").arg(&["pop", "q1"]).query(&mut con)?;
-    assert_eq!(test, "m2");
+    let test: Vec<String> = redis::cmd("valq").arg(&["pop", "q1"]).query(&mut con)?;
+    assert_eq!(test, ["body", "m1", "id", "1"]);
+    let test: Vec<String> = redis::cmd("valq").arg(&["pop", "q1"]).query(&mut con)?;
+    assert_eq!(test, ["body", "m2", "id", "2"]);
     let test: String = redis::cmd("valq").arg(&["len", "q1"]).query(&mut con)?;
     assert_eq!(test, "0");
 
