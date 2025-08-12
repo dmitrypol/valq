@@ -8,8 +8,8 @@ use crate::data_types::VALQ_TYPE;
 use valkey_module::alloc::ValkeyAlloc;
 use valkey_module::valkey_module;
 
-// TODO configurable visibility_timeout per queue
-static VISIBILITY_TIMEOUT: u64 = 60;
+static VISIBILITY_TIMEOUT_DEFAULT: u64 = 30;
+static VISIBILITY_TIMEOUT_MAX: u64 = 43_200; // 12 hours
 
 valkey_module! {
     name: "valq",

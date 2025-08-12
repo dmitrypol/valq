@@ -52,7 +52,7 @@ mod tests {
 
     #[test]
     fn free_non_null_pointer() {
-        let valq = Box::new(ValqType::default());
+        let valq = Box::new(ValqType::new(None));
         let raw_ptr = Box::into_raw(valq);
         free(raw_ptr.cast());
         // ensuring no memory leaks or panics occur

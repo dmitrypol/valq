@@ -10,7 +10,7 @@ pub(crate) extern "C" fn rdb_load(
     if rdb.is_null() {
         return std::ptr::null_mut();
     }
-    let mut valq = ValqType::default();
+    let mut valq = ValqType::new(None);
     // save and load must be in the same order
     // load id_sequence
     valq.set_id_sequence(match valkey_module::load_unsigned(rdb) {

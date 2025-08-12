@@ -40,11 +40,21 @@ fn test_valq() -> anyhow::Result<()> {
         .arg(&["ack", "invalid-q", "invalid-id"])
         .query(&mut con);
     assert!(test.is_err());
+    // create queue with invalid visibility timeout
+    let test: RedisResult<String> = redis::cmd("valq")
+        .arg(&["create", "invalid-q", "0"])
+        .query(&mut con);
+    assert!(test.is_err());
 
-    let test: String = redis::cmd("valq").arg(&["create", "q1"]).query(&mut con)?;
+    // create queue with custom visibility timeout
+    let test: String = redis::cmd("valq")
+        .arg(&["create", "q1", "60"])
+        .query(&mut con)?;
     assert_eq!(test, "created q");
+    // duplicate queue name, should fail
     let test: RedisResult<String> = redis::cmd("valq").arg(&["create", "q1"]).query(&mut con);
     assert!(test.is_err());
+    // create another queue with default visibility timeout
     let test: String = redis::cmd("valq").arg(&["create", "q2"]).query(&mut con)?;
     assert_eq!(test, "created q");
 
