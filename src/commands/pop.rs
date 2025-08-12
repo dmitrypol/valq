@@ -1,6 +1,7 @@
 use crate::data_types::VALQ_TYPE;
 use crate::structs::valq_msg::ValqMsg;
 use crate::structs::valq_type::ValqType;
+use crate::utils;
 use std::collections::VecDeque;
 use valkey_module::{Context, NextArg, ValkeyError, ValkeyResult, ValkeyString};
 
@@ -16,19 +17,16 @@ pub(crate) fn pop(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     match value {
         Some(tmp) => {
             let data: &mut VecDeque<ValqMsg> = tmp.msgs_mut();
-            match data.pop_front() {
-                Some(msg) => {
-                    // store the message to msgs_in_flight
-                    tmp.msgs_in_flight_mut()
-                        .insert(*msg.id(), msg.body().clone());
-                    // return the message body
-                    Ok(msg.into())
-                }
-                None => {
-                    // queue is empty
-                    Ok("".into())
-                }
+            // iterate through messages and find the first one that is visible
+            for msg in data.iter_mut().filter(|msg| msg.is_visible()) {
+                // set timeout_at and return the message
+                msg.set_timeout_at(Some(
+                    utils::now_as_seconds().saturating_add(crate::VISIBILITY_TIMEOUT),
+                ));
+                return Ok(msg.clone().into());
             }
+            // all messages have timeout_at, return nothing
+            Ok("".into())
         }
         None => Err(ValkeyError::Str("invalid queue")),
     }

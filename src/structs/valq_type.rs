@@ -1,6 +1,6 @@
 use crate::structs::valq_msg::ValqMsg;
 use getset::{Getters, MutGetters, Setters};
-use std::collections::{HashMap, VecDeque};
+use std::collections::VecDeque;
 
 #[derive(Debug, Clone, Getters, Setters, MutGetters, Default)]
 pub(crate) struct ValqType {
@@ -8,8 +8,6 @@ pub(crate) struct ValqType {
     id_sequence: u64,
     #[getset(get = "pub", get_mut = "pub")]
     msgs: VecDeque<ValqMsg>,
-    #[getset(get = "pub", get_mut = "pub")]
-    msgs_in_flight: HashMap<u64, String>,
 }
 
 #[cfg(test)]
@@ -22,13 +20,12 @@ mod tests {
         let valq = ValqType::default();
         assert_eq!(*valq.id_sequence(), 0);
         assert!(valq.msgs().is_empty());
-        assert!(valq.msgs_in_flight().is_empty());
     }
 
     #[test]
     fn valq_type_add_msg() {
         let mut valq = ValqType::default();
-        let msg = ValqMsg::new(42, "test msg".to_string());
+        let msg = ValqMsg::new(42, "test msg".to_string(), None);
         valq.msgs_mut().push_back(msg);
         assert_eq!(valq.msgs().len(), 1);
         assert_eq!(valq.msgs().front().unwrap().body(), "test msg");
