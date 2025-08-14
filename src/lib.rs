@@ -10,6 +10,8 @@ use valkey_module::valkey_module;
 
 static VISIBILITY_TIMEOUT_DEFAULT: u64 = 30;
 static VISIBILITY_TIMEOUT_MAX: u64 = 43_200; // 12 hours
+static DELIVERY_ATTEMPTS_DEFAULT: u64 = 5;
+static DELIVERY_ATTEMPTS_MAX: u64 = 20;
 
 valkey_module! {
     name: "valq",

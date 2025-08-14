@@ -10,6 +10,10 @@ pub(crate) extern "C" fn rdb_save(rdb: *mut valkey_module::RedisModuleIO, value:
     // save and load must be in the same order
     // save id_sequence
     valkey_module::save_unsigned(rdb, *item.id_sequence());
+    // save visibility_timeout
+    valkey_module::save_unsigned(rdb, *item.visibility_timeout());
+    // save max_delivery_attempts
+    valkey_module::save_unsigned(rdb, *item.max_delivery_attempts());
     // save the size of the msgs VecDeque
     valkey_module::save_unsigned(rdb, item.msgs().len() as u64);
     // save each message in the msgs VecDeque
@@ -21,6 +25,8 @@ pub(crate) extern "C" fn rdb_save(rdb: *mut valkey_module::RedisModuleIO, value:
         // if timeout_at is None, it will be saved as 0
         // if timeout_at is Some, it will be saved as the actual value
         valkey_module::save_unsigned(rdb, msg.timeout_at().unwrap_or(0));
+        // save delivery_attempts
+        valkey_module::save_unsigned(rdb, *msg.delivery_attempts());
     });
     // log the saved item
     log_notice(format!("rdb_save: {:?}", item));

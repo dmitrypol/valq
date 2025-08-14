@@ -10,10 +10,20 @@ pub(crate) extern "C" fn rdb_load(
     if rdb.is_null() {
         return std::ptr::null_mut();
     }
-    let mut valq = ValqType::new(None);
+    let mut valq = ValqType::new(None, None);
     // save and load must be in the same order
     // load id_sequence
     valq.set_id_sequence(match valkey_module::load_unsigned(rdb) {
+        Ok(tmp) => tmp,
+        Err(_err) => return std::ptr::null_mut(),
+    });
+    // load visibility_timeout
+    valq.set_visibility_timeout(match valkey_module::load_unsigned(rdb) {
+        Ok(tmp) => tmp,
+        Err(_err) => return std::ptr::null_mut(),
+    });
+    // load max_delivery_attempts
+    valq.set_max_delivery_attempts(match valkey_module::load_unsigned(rdb) {
         Ok(tmp) => tmp,
         Err(_err) => return std::ptr::null_mut(),
     });
@@ -36,8 +46,12 @@ pub(crate) extern "C" fn rdb_load(
             Ok(_) => None,
             Err(_) => return std::ptr::null_mut(),
         };
+        let delivery_attempts = match valkey_module::load_unsigned(rdb) {
+            Ok(tmp) => tmp,
+            Err(_err) => return std::ptr::null_mut(),
+        };
         valq.msgs_mut()
-            .push_back(ValqMsg::new(id, body, timeout_at));
+            .push_back(ValqMsg::new(id, body, timeout_at, delivery_attempts));
     }
     log_notice(format!("rdb_load: {:?}", valq));
     Box::into_raw(Box::new(valq)) as *mut c_void

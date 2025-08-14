@@ -17,13 +17,21 @@ pub(crate) fn pop(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     match value {
         Some(tmp) => {
             let visibility_timeout = *tmp.visibility_timeout();
+            let max_delivery_attempts = *tmp.max_delivery_attempts();
             let data: &mut VecDeque<ValqMsg> = tmp.msgs_mut();
             // iterate through messages and find the first one that is visible
-            for msg in data.iter_mut().filter(|msg| msg.is_visible()) {
-                // set timeout_at and return the message
+            for msg in data
+                .iter_mut()
+                .filter(|msg| msg.is_visible(max_delivery_attempts))
+            {
+                // set timeout_at
                 msg.set_timeout_at(Some(
                     utils::now_as_seconds().saturating_add(visibility_timeout),
                 ));
+                // increment delivery_attempts
+                msg.set_delivery_attempts(msg.delivery_attempts() + 1);
+                // TODO - move to DLQ if delivery_attempts exceeds max_delivery_attempts
+                // return the message
                 return Ok(msg.clone().into());
             }
             // all messages have timeout_at, return nothing

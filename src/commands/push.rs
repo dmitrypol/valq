@@ -19,7 +19,8 @@ pub(crate) fn push(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
             let id = tmp.id_sequence() + 1;
             tmp.set_id_sequence(id);
             // add new value to the queue
-            tmp.msgs_mut().push_back(ValqMsg::new(id, value_arg, None));
+            tmp.msgs_mut()
+                .push_back(ValqMsg::new(id, value_arg, None, 0));
             Ok(id.to_string().into())
         }
         None => Err(ValkeyError::Str("create the queue")),
