@@ -14,13 +14,13 @@ fn test_valq() -> anyhow::Result<()> {
         utils::get_server_connection(port).with_context(|| "failed to connect to valkey server")?;
 
     let test: Vec<String> = redis::cmd("valq").query(&mut con)?;
-    assert_eq!(test.len(), 7);
+    assert_eq!(test.len(), 8);
 
     let test: Vec<String> = redis::cmd("valq").arg(&["info"]).query(&mut con)?;
-    assert_eq!(test.len(), 7);
+    assert_eq!(test.len(), 8);
 
     // missing arguments
-    for command in vec!["create", "delete", "push", "pop", "ack", "len"] {
+    for command in vec!["create", "delete", "push", "pop", "ack", "len", "extend"] {
         let test: RedisResult<String> = redis::cmd("valq").arg(&[command]).query(&mut con);
         assert!(test.is_err());
     }
@@ -38,6 +38,11 @@ fn test_valq() -> anyhow::Result<()> {
     // ack on invalid queue
     let test: RedisResult<String> = redis::cmd("valq")
         .arg(&["ack", "invalid-q", "invalid-id"])
+        .query(&mut con);
+    assert!(test.is_err());
+    // extend message on invalid queue
+    let test: RedisResult<String> = redis::cmd("valq")
+        .arg(&["extend", "invalid-q", "invalid-id"])
         .query(&mut con);
     assert!(test.is_err());
     // create queue with invalid visibility timeout
@@ -80,6 +85,26 @@ fn test_valq() -> anyhow::Result<()> {
     let test: String = redis::cmd("valq").arg(&["len", "q1"]).query(&mut con)?;
     // TODO - exclude messages with timeout_at
     assert_eq!(test, "2");
+
+    let test: String = redis::cmd("valq")
+        .arg(&["extend", "q1", "1", "100"])
+        .query(&mut con)?;
+    assert_eq!(test, "extend");
+    // extend message with invalid id
+    let test: RedisResult<String> = redis::cmd("valq")
+        .arg(&["extend", "q1", "invalid-id", "100"])
+        .query(&mut con);
+    assert!(test.is_err());
+    // extend message with invalid timeout
+    let test: RedisResult<String> = redis::cmd("valq")
+        .arg(&["extend", "q1", "1", "invalid-timeout"])
+        .query(&mut con);
+    assert!(test.is_err());
+    // extend message with too large timeout, greater than 43_200 seconds (12 hours)
+    let test: RedisResult<String> = redis::cmd("valq")
+        .arg(&["extend", "q1", "1", "43201"])
+        .query(&mut con);
+    assert!(test.is_err());
 
     let test: String = redis::cmd("valq")
         .arg(&["ack", "q1", "1"])

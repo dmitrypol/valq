@@ -1,5 +1,6 @@
 mod ack;
 mod admin;
+mod extend;
 mod len;
 mod pop;
 mod push;
@@ -20,6 +21,7 @@ pub(crate) fn valq_cmd(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
         "pop" => pop::pop(ctx, args),
         "ack" => ack::ack(ctx, args),
         "len" => len::len(ctx, args),
+        "extend" => extend::extend(ctx, args),
         _ => help(),
     }
 }
@@ -31,7 +33,8 @@ fn help() -> ValkeyResult {
         "valq delete - delete q".into(),
         "valq push - push message to q".into(),
         "valq pop - get message from q".into(),
-        "valq ack - ack message completion for q".into(),
+        "valq ack - ack message completion".into(),
+        "valq extend - extend message to have more time to complete it".into(),
         "valq help - display this message".into(),
     ];
     Ok(output.into())
