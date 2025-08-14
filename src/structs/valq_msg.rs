@@ -30,14 +30,17 @@ impl ValqMsg {
         }
     }
 
-    pub(crate) fn is_visible(&self, max_delivery_attempts: u64) -> bool {
+    pub(crate) fn check_timeout_at(&self) -> bool {
         // return true if without timeout_at or with timeout_at in the past
-        let timeout_check = match self.timeout_at {
+        match self.timeout_at {
             Some(timeout) => timeout <= utils::now_as_seconds(),
             None => true,
-        };
-        let delivery_check = self.delivery_attempts < max_delivery_attempts;
-        timeout_check && delivery_check
+        }
+    }
+
+    pub(crate) fn check_max_delivery_attempts(&self, max_delivery_attempts: u64) -> bool {
+        // return true if delivery_attempts is less than max_delivery_attempts so message can be processed
+        self.delivery_attempts < max_delivery_attempts
     }
 }
 
@@ -66,30 +69,30 @@ mod tests {
     }
 
     #[test]
-    fn is_visible_no_timeout() {
+    fn no_timeout() {
         let msg = ValqMsg::new(42, "test msg".to_string(), None, 0);
-        assert!(msg.is_visible(DELIVERY_ATTEMPTS_DEFAULT));
+        assert!(msg.check_timeout_at());
     }
 
     #[test]
-    fn is_visible_timeout_at_current_time() {
+    fn timeout_at_current_time() {
         let current_timeout = Some(now_as_seconds());
         let msg = ValqMsg::new(42, "test msg".to_string(), current_timeout, 0);
-        assert!(msg.is_visible(DELIVERY_ATTEMPTS_DEFAULT));
+        assert!(msg.check_timeout_at());
     }
 
     #[test]
-    fn is_visible_timeout_in_past() {
+    fn timeout_in_past() {
         let past_timeout = Some(now_as_seconds() - 10);
         let msg = ValqMsg::new(42, "test msg".to_string(), past_timeout, 0);
-        assert!(msg.is_visible(DELIVERY_ATTEMPTS_DEFAULT));
+        assert!(msg.check_timeout_at());
     }
 
     #[test]
-    fn is_visible_timeout_in_future() {
+    fn timeout_in_future() {
         let future_timeout = Some(now_as_seconds() + 10);
         let msg = ValqMsg::new(42, "test msg".to_string(), future_timeout, 0);
-        assert!(!msg.is_visible(DELIVERY_ATTEMPTS_DEFAULT));
+        assert!(!msg.check_timeout_at());
     }
 
     #[test]
@@ -98,31 +101,19 @@ mod tests {
         let new_timeout = Some(now_as_seconds() + 100);
         msg.set_timeout_at(new_timeout);
         assert_eq!(*msg.timeout_at(), new_timeout);
-        assert!(!msg.is_visible(DELIVERY_ATTEMPTS_DEFAULT));
+        assert!(!msg.check_timeout_at());
     }
 
     #[test]
-    fn is_visible_exceeds_max_delivery_attempts() {
-        let future_timeout = Some(now_as_seconds() + 10);
-        let msg = ValqMsg::new(
-            42,
-            "test msg".to_string(),
-            future_timeout,
-            DELIVERY_ATTEMPTS_DEFAULT + 1,
-        );
-        assert!(!msg.is_visible(DELIVERY_ATTEMPTS_DEFAULT));
+    fn max_delivery_attempts() {
+        let msg = ValqMsg::new(1, "msg".to_string(), None, 2);
+        assert!(!msg.check_max_delivery_attempts(1));
     }
 
     #[test]
-    fn is_visible_with_timeout_and_exceeds_max_delivery_attempts() {
-        let past_timeout = Some(now_as_seconds() - 10);
-        let msg = ValqMsg::new(
-            42,
-            "test msg".to_string(),
-            past_timeout,
-            DELIVERY_ATTEMPTS_DEFAULT + 1,
-        );
-        assert!(!msg.is_visible(DELIVERY_ATTEMPTS_DEFAULT));
+    fn max_delivery_attempts_exceeded() {
+        let msg = ValqMsg::new(1, "msg".to_string(), None, DELIVERY_ATTEMPTS_DEFAULT + 1);
+        assert!(!msg.check_max_delivery_attempts(DELIVERY_ATTEMPTS_DEFAULT));
     }
 
     #[test]
@@ -130,7 +121,7 @@ mod tests {
         let mut msg = ValqMsg::new(42, "test msg".to_string(), None, 0);
         msg.set_delivery_attempts(3);
         assert_eq!(*msg.delivery_attempts(), 3);
-        assert!(msg.is_visible(DELIVERY_ATTEMPTS_DEFAULT));
+        assert!(msg.check_max_delivery_attempts(DELIVERY_ATTEMPTS_DEFAULT));
     }
 
     #[test]

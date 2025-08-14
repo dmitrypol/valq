@@ -24,11 +24,11 @@ fn handler(value: Option<&mut ValqType>) -> ValkeyResult {
             let max_delivery_attempts = *tmp.max_delivery_attempts();
             let data: &mut VecDeque<ValqMsg> = tmp.msgs_mut();
             // iterate through messages and find the first one that is visible
-            for msg in data
-                .iter_mut()
-                .filter(|msg| msg.is_visible(max_delivery_attempts))
-            {
-                // TODO - move to DLQ if delivery_attempts exceeds max_delivery_attempts
+            for msg in data.iter_mut().filter(|msg| msg.check_timeout_at()) {
+                if !msg.check_max_delivery_attempts(max_delivery_attempts) {
+                    // TODO - move to DLQ if delivery_attempts exceeds max_delivery_attempts
+                    continue; // skip this message
+                }
                 // set timeout_at
                 msg.set_timeout_at(Some(
                     utils::now_as_seconds().saturating_add(visibility_timeout),
