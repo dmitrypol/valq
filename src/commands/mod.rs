@@ -13,7 +13,7 @@ pub(crate) fn valq_cmd(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
         return help();
     }
     let mut args = args.into_iter().skip(1);
-    let subcmd = args.next_string()?;
+    let subcmd = args.next_string()?.to_lowercase();
     let args: Vec<ValkeyString> = args.collect();
     match subcmd.to_lowercase().as_str() {
         "create" => create::create(ctx, args),

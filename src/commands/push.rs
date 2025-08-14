@@ -50,4 +50,15 @@ mod tests {
         let test = handler("msg2".to_string(), Some(&mut valq));
         assert_eq!(test.unwrap(), ValkeyValue::BulkString("2".to_string()));
     }
+
+    #[test]
+    fn test_large_number_of_messages() {
+        let mut valq = ValqType::new(None, None);
+        for i in 1..=10_000 {
+            let test = handler(format!("msg{}", i), Some(&mut valq));
+            assert!(test.is_ok());
+            assert_eq!(test.unwrap(), ValkeyValue::BulkString(i.to_string()));
+        }
+        assert_eq!(valq.msgs_mut().len(), 10_000);
+    }
 }

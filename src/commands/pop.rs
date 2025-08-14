@@ -22,11 +22,16 @@ fn handler(value: Option<&mut ValqType>) -> ValkeyResult {
         Some(tmp) => {
             let visibility_timeout = *tmp.visibility_timeout();
             let max_delivery_attempts = *tmp.max_delivery_attempts();
-            let data: &mut VecDeque<ValqMsg> = tmp.msgs_mut();
+            let msgs: &mut VecDeque<ValqMsg> = tmp.msgs_mut();
+            let mut max_delivery_attempts_msgs = Vec::new();
             // iterate through messages and find the first one that is visible
-            for msg in data.iter_mut().filter(|msg| msg.check_timeout_at()) {
+            for (index, msg) in msgs
+                .iter_mut()
+                .enumerate()
+                .filter(|(_index, msg)| msg.check_timeout_at())
+            {
                 if !msg.check_max_delivery_attempts(max_delivery_attempts) {
-                    // TODO - move to DLQ if delivery_attempts exceeds max_delivery_attempts
+                    max_delivery_attempts_msgs.push((index, msg.clone()));
                     continue; // skip this message
                 }
                 // set timeout_at
@@ -37,6 +42,11 @@ fn handler(value: Option<&mut ValqType>) -> ValkeyResult {
                 msg.set_delivery_attempts(msg.delivery_attempts() + 1);
                 // return the message
                 return Ok(msg.clone().into());
+            }
+            // remove from msgs and add to dlg_msgs
+            for (index, msg) in max_delivery_attempts_msgs {
+                tmp.msgs_mut().remove(index);
+                tmp.dlq_msgs_mut().push_back(msg);
             }
             // all messages have timeout_at, return nothing
             Ok("".into())
@@ -61,6 +71,8 @@ mod tests {
         let mut valq = ValqType::new(None, None);
         let test = handler(Some(&mut valq));
         assert_eq!(test.unwrap(), ValkeyValue::BulkString("".to_string()));
+        assert!(valq.msgs().is_empty());
+        assert!(valq.dlq_msgs().is_empty());
     }
 
     #[test]
@@ -79,6 +91,7 @@ mod tests {
         valq.msgs_mut().push_back(msg);
         let test = handler(Some(&mut valq));
         assert_eq!(test.unwrap(), ValkeyValue::BulkString("".to_string()));
+        assert_eq!(valq.dlq_msgs().len(), 1);
     }
 
     #[test]
@@ -88,5 +101,19 @@ mod tests {
         valq.msgs_mut().push_back(msg);
         let test = handler(Some(&mut valq));
         assert!(test.is_ok());
+        assert!(valq.dlq_msgs().is_empty());
+    }
+
+    #[test]
+    fn test_move_message_to_dlq_when_delivery_attempts_exceeded() {
+        let mut valq = ValqType::new(None, None);
+        let msg = ValqMsg::new(1, "msg".to_string(), Some(utils::now_as_seconds()), 5);
+        valq.msgs_mut().push_back(msg);
+
+        let test = handler(Some(&mut valq));
+        assert_eq!(test.unwrap(), ValkeyValue::BulkString("".to_string()));
+        assert!(valq.msgs().is_empty());
+        assert_eq!(valq.dlq_msgs().len(), 1);
+        assert_eq!(valq.dlq_msgs()[0].id(), &1);
     }
 }

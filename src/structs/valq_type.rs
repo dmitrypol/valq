@@ -13,6 +13,8 @@ pub(crate) struct ValqType {
     max_delivery_attempts: u64,
     #[getset(get = "pub", get_mut = "pub")]
     msgs: VecDeque<ValqMsg>,
+    #[getset(get = "pub", get_mut = "pub")]
+    dlq_msgs: VecDeque<ValqMsg>,
 }
 
 impl ValqType {
@@ -23,6 +25,7 @@ impl ValqType {
             visibility_timeout: visibility_timeout.unwrap_or(VISIBILITY_TIMEOUT_DEFAULT),
             max_delivery_attempts: max_delivery_attempts.unwrap_or(DELIVERY_ATTEMPTS_DEFAULT),
             msgs: VecDeque::new(),
+            dlq_msgs: VecDeque::new(),
         }
     }
 }
@@ -36,9 +39,10 @@ mod tests {
     fn valq_type_init_empty() {
         let valq = ValqType::new(None, None);
         assert_eq!(*valq.id_sequence(), 0);
-        assert!(valq.msgs().is_empty());
         assert_eq!(*valq.visibility_timeout(), VISIBILITY_TIMEOUT_DEFAULT);
         assert_eq!(*valq.max_delivery_attempts(), DELIVERY_ATTEMPTS_DEFAULT);
+        assert!(valq.msgs().is_empty());
+        assert!(valq.dlq_msgs().is_empty());
     }
 
     #[test]

@@ -27,9 +27,9 @@ pub(crate) fn extend(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
 fn handler(msg_id_arg: u64, extend_seconds_arg: u64, value: Option<&mut ValqType>) -> ValkeyResult {
     match value {
         Some(tmp) => {
-            let data: &mut VecDeque<ValqMsg> = tmp.msgs_mut();
+            let msgs: &mut VecDeque<ValqMsg> = tmp.msgs_mut();
             // iterate through messages looking for the message with the given ID
-            for msg in data.iter_mut().filter(|msg| *msg.id() == msg_id_arg) {
+            for msg in msgs.iter_mut().filter(|msg| *msg.id() == msg_id_arg) {
                 // update timeout_at
                 msg.set_timeout_at(Some(
                     utils::now_as_seconds().saturating_add(extend_seconds_arg),
@@ -57,6 +57,13 @@ mod tests {
     }
 
     #[test]
+    fn test_with_empty_queue() {
+        let mut valq = ValqType::new(None, None);
+        let test = handler(1, 10, Some(&mut valq));
+        assert!(test.is_err());
+    }
+
+    #[test]
     fn test_with_valid_queue() {
         let mut valq = ValqType::new(None, None);
         valq.msgs_mut()
@@ -66,6 +73,7 @@ mod tests {
         let test = handler(1, 10, Some(&mut valq));
         assert_eq!(test.unwrap(), ValkeyValue::BulkString("extend".to_string()));
         assert_eq!(valq.msgs_mut().len(), 2);
+        assert_eq!(valq.dlq_msgs_mut().len(), 0);
         // check if the timeout_at is updated
         let msg = valq.msgs_mut().get(0).unwrap();
         assert!(msg.timeout_at().unwrap() > utils::now_as_seconds());
@@ -73,5 +81,22 @@ mod tests {
         // invalid message ID
         let test = handler(3, 10, Some(&mut valq));
         assert!(test.is_err());
+    }
+
+    #[test]
+    fn test_large_number_of_messages() {
+        let mut valq = ValqType::new(None, None);
+        for i in 1..=10_000 {
+            valq.msgs_mut()
+                .push_back(ValqMsg::new(i, format!("msg{}", i), None, 0));
+        }
+        let test = handler(5_000, 30, Some(&mut valq));
+        assert_eq!(test.unwrap(), ValkeyValue::BulkString("extend".to_string()));
+        let msg = valq
+            .msgs_mut()
+            .iter()
+            .find(|msg| *msg.id() == 5_000)
+            .unwrap();
+        assert!(msg.timeout_at().unwrap() > utils::now_as_seconds());
     }
 }

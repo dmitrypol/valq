@@ -1,6 +1,7 @@
 use crate::data_types::VALQ_TYPE;
 use crate::structs::valq_type::ValqType;
-use valkey_module::{Context, NextArg, ValkeyError, ValkeyResult, ValkeyString};
+use std::collections::BTreeMap;
+use valkey_module::{Context, NextArg, ValkeyError, ValkeyResult, ValkeyString, ValkeyValue};
 
 pub(crate) fn len(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     if args.len() != 1 {
@@ -9,10 +10,66 @@ pub(crate) fn len(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     let mut args = args.into_iter();
     let key_arg = args.next_arg()?;
     let key = ctx.open_key(&key_arg);
-    let current_value = key.get_value::<ValqType>(&VALQ_TYPE)?;
-    // TODO - exclude messages with timeout_at
-    match current_value {
-        Some(tmp) => Ok(tmp.msgs().len().into()),
-        None => Ok("0".into()),
+    let value = key.get_value::<ValqType>(&VALQ_TYPE)?;
+    handler(value)
+}
+
+fn handler(value: Option<&ValqType>) -> ValkeyResult {
+    match value {
+        Some(tmp) => {
+            let output = ValkeyValue::OrderedMap(BTreeMap::from([
+                ("dlq_msgs".into(), tmp.dlq_msgs().len().to_string().into()),
+                // TODO - exclude messages with timeout_at and max_delivery_attempts
+                ("msgs".into(), tmp.msgs().len().to_string().into()),
+            ]));
+            Ok(output.into())
+        }
+        None => Err(ValkeyError::Str("q not found")),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::structs::valq_msg::ValqMsg;
+    use valkey_module::ValkeyValue;
+
+    #[test]
+    fn test_with_nonexistent_queue() {
+        let test = handler(None);
+        assert!(test.is_err());
+    }
+
+    #[test]
+    fn test_with_empty_queue() {
+        let valq = ValqType::new(None, None);
+        let test = handler(Some(&valq));
+        assert_eq!(
+            test.unwrap(),
+            ValkeyValue::OrderedMap(BTreeMap::from([
+                ("dlq_msgs".into(), "0".into()),
+                ("msgs".into(), "0".into())
+            ]))
+        );
+    }
+
+    #[test]
+    fn test_with_valid_queue() {
+        let mut valq = ValqType::new(None, None);
+        valq.msgs_mut()
+            .push_back(ValqMsg::new(1, "msg1".to_string(), None, 0));
+        valq.msgs_mut()
+            .push_back(ValqMsg::new(2, "msg2".to_string(), None, 0));
+        valq.dlq_msgs_mut()
+            .push_back(ValqMsg::new(3, "dlq_msg1".to_string(), None, 0));
+
+        let test = handler(Some(&mut valq));
+        assert_eq!(
+            test.unwrap(),
+            ValkeyValue::OrderedMap(BTreeMap::from([
+                ("dlq_msgs".into(), "1".into()),
+                ("msgs".into(), "2".into())
+            ]))
+        );
     }
 }

@@ -20,14 +20,14 @@ pub(crate) fn ack(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
 fn handler(msg_id_arg: u64, value: Option<&mut ValqType>) -> ValkeyResult {
     match value {
         Some(tmp) => {
-            let data: &mut VecDeque<ValqMsg> = tmp.msgs_mut();
+            let msgs: &mut VecDeque<ValqMsg> = tmp.msgs_mut();
             // iterate through messages looking for the message with the given ID
-            for (index, _msg) in data
+            for (index, _msg) in msgs
                 .iter_mut()
                 .enumerate()
                 .filter(|(_index, msg)| *msg.id() == msg_id_arg)
             {
-                data.remove(index);
+                msgs.remove(index);
                 return Ok("ack".into());
             }
             Err(ValkeyError::String(format!(
@@ -51,6 +51,13 @@ mod tests {
     }
 
     #[test]
+    fn test_with_empty_queue() {
+        let mut valq = ValqType::new(None, None);
+        let test = handler(1, Some(&mut valq));
+        assert!(test.is_err());
+    }
+
+    #[test]
     fn test_with_valid_queue() {
         let mut valq = ValqType::new(None, None);
         valq.msgs_mut()
@@ -61,9 +68,23 @@ mod tests {
         let test = handler(1, Some(&mut valq));
         assert_eq!(test.unwrap(), ValkeyValue::BulkString("ack".to_string()));
         assert_eq!(valq.msgs_mut().len(), 1);
+        assert_eq!(valq.dlq_msgs_mut().len(), 0);
 
         // invalid message ID
         let test = handler(3, Some(&mut valq));
         assert!(test.is_err());
+    }
+
+    #[test]
+    fn test_large_number_of_messages() {
+        let mut valq = ValqType::new(None, None);
+        for i in 1..=10_000 {
+            valq.msgs_mut()
+                .push_back(ValqMsg::new(i, format!("msg{}", i), None, 0));
+        }
+        let test = handler(5_000, Some(&mut valq));
+        assert_eq!(test.unwrap(), ValkeyValue::BulkString("ack".to_string()));
+        let msg = valq.msgs_mut().iter().find(|msg| *msg.id() == 5_000);
+        assert!(msg.is_none());
     }
 }

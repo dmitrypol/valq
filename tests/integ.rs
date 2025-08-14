@@ -83,8 +83,12 @@ fn test_valq() -> anyhow::Result<()> {
         .query(&mut con)?;
     assert_eq!(test, "2");
 
-    let test: String = redis::cmd("valq").arg(&["len", "q1"]).query(&mut con)?;
-    assert_eq!(test, "2");
+    let test: RedisResult<String> = redis::cmd("valq")
+        .arg(&["len", "invalid-q"])
+        .query(&mut con);
+    assert!(test.is_err());
+    let test: Vec<String> = redis::cmd("valq").arg(&["len", "q1"]).query(&mut con)?;
+    assert_eq!(test, ["dlq_msgs", "0", "msgs", "2"]);
     let test: Vec<String> = redis::cmd("valq").arg(&["pop", "q1"]).query(&mut con)?;
     assert_eq!(test, ["body", "msg1", "id", "1"]);
     let test: Vec<String> = redis::cmd("valq").arg(&["pop", "q1"]).query(&mut con)?;
@@ -92,9 +96,9 @@ fn test_valq() -> anyhow::Result<()> {
     // now q has no visible messages, so pop should return empty
     let test: Vec<String> = redis::cmd("valq").arg(&["pop", "q1"]).query(&mut con)?;
     assert_eq!(test, [""]);
-    let test: String = redis::cmd("valq").arg(&["len", "q1"]).query(&mut con)?;
+    let test: Vec<String> = redis::cmd("valq").arg(&["len", "q1"]).query(&mut con)?;
     // TODO - exclude messages with timeout_at and delivery_attempts
-    assert_eq!(test, "2");
+    assert_eq!(test, ["dlq_msgs", "0", "msgs", "2"]);
 
     let test: String = redis::cmd("valq")
         .arg(&["extend", "q1", "1", "1"])
@@ -130,12 +134,16 @@ fn test_valq() -> anyhow::Result<()> {
     let test: Vec<String> = redis::cmd("valq").arg(&["pop", "q1"]).query(&mut con)?;
     assert_eq!(test, [""]);
 
+    let test: Vec<String> = redis::cmd("valq").arg(&["len", "q1"]).query(&mut con)?;
+    // TODO - why is there 1 message in msgs?
+    assert_eq!(test, ["dlq_msgs", "2", "msgs", "1"]);
+
+    // create new message to ack
+    redis::cmd("valq")
+        .arg(&["push", "q1", "msg3"])
+        .exec(&mut con)?;
     let test: String = redis::cmd("valq")
-        .arg(&["ack", "q1", "1"])
-        .query(&mut con)?;
-    assert_eq!(test, "ack");
-    let test: String = redis::cmd("valq")
-        .arg(&["ack", "q1", "2"])
+        .arg(&["ack", "q1", "3"])
         .query(&mut con)?;
     assert_eq!(test, "ack");
     // ack invalid message id
