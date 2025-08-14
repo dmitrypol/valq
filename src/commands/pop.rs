@@ -14,6 +14,10 @@ pub(crate) fn pop(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     let value = ctx
         .open_key_writable(&key_arg)
         .get_value::<ValqType>(&VALQ_TYPE)?;
+    handler(value)
+}
+
+fn handler(value: Option<&mut ValqType>) -> ValkeyResult {
     match value {
         Some(tmp) => {
             let visibility_timeout = *tmp.visibility_timeout();
@@ -24,13 +28,13 @@ pub(crate) fn pop(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
                 .iter_mut()
                 .filter(|msg| msg.is_visible(max_delivery_attempts))
             {
+                // TODO - move to DLQ if delivery_attempts exceeds max_delivery_attempts
                 // set timeout_at
                 msg.set_timeout_at(Some(
                     utils::now_as_seconds().saturating_add(visibility_timeout),
                 ));
                 // increment delivery_attempts
                 msg.set_delivery_attempts(msg.delivery_attempts() + 1);
-                // TODO - move to DLQ if delivery_attempts exceeds max_delivery_attempts
                 // return the message
                 return Ok(msg.clone().into());
             }
@@ -38,5 +42,51 @@ pub(crate) fn pop(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
             Ok("".into())
         }
         None => Err(ValkeyError::Str("invalid queue")),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use valkey_module::ValkeyValue;
+
+    #[test]
+    fn test_with_nonexistent_queue() {
+        let test = handler(None);
+        assert!(test.is_err());
+    }
+
+    #[test]
+    fn test_with_empty_queue_returns_nothing() {
+        let mut valq = ValqType::new(None, None);
+        let test = handler(Some(&mut valq));
+        assert_eq!(test.unwrap(), ValkeyValue::BulkString("".to_string()));
+    }
+
+    #[test]
+    fn test_with_no_visible_message_in_queue() {
+        let mut valq = ValqType::new(None, None);
+        let msg = ValqMsg::new(1, "msg".to_string(), Some(utils::now_as_seconds() + 10), 0);
+        valq.msgs_mut().push_back(msg);
+        let test = handler(Some(&mut valq));
+        assert_eq!(test.unwrap(), ValkeyValue::BulkString("".to_string()));
+    }
+
+    #[test]
+    fn test_with_delivery_attempts_exceeded() {
+        let mut valq = ValqType::new(None, None);
+        let msg = ValqMsg::new(1, "msg".to_string(), Some(utils::now_as_seconds()), 5);
+        valq.msgs_mut().push_back(msg);
+        let test = handler(Some(&mut valq));
+        assert_eq!(test.unwrap(), ValkeyValue::BulkString("".to_string()));
+    }
+
+    #[test]
+    fn test_with_visible_message_in_queue() {
+        let mut valq = ValqType::new(None, None);
+        let msg = ValqMsg::new(1, "msg".to_string(), Some(utils::now_as_seconds()), 0);
+        valq.msgs_mut().push_back(msg);
+        let test = handler(Some(&mut valq));
+        assert!(test.is_ok());
     }
 }

@@ -13,6 +13,10 @@ pub(crate) fn push(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     let value = ctx
         .open_key_writable(&key_arg)
         .get_value::<ValqType>(&VALQ_TYPE)?;
+    handler(value_arg, value)
+}
+
+fn handler(value_arg: String, value: Option<&mut ValqType>) -> ValkeyResult {
     match value {
         Some(tmp) => {
             // increment id_sequence
@@ -24,5 +28,26 @@ pub(crate) fn push(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
             Ok(id.to_string().into())
         }
         None => Err(ValkeyError::Str("create the queue")),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use valkey_module::ValkeyValue;
+
+    #[test]
+    fn test_with_nonexistent_queue() {
+        let test = handler("msg1".to_string(), None);
+        assert!(test.is_err());
+    }
+
+    #[test]
+    fn test_with_valid_queue() {
+        let mut valq = ValqType::new(None, None);
+        let test = handler("msg1".to_string(), Some(&mut valq));
+        assert_eq!(test.unwrap(), ValkeyValue::BulkString("1".to_string()));
+        let test = handler("msg2".to_string(), Some(&mut valq));
+        assert_eq!(test.unwrap(), ValkeyValue::BulkString("2".to_string()));
     }
 }
