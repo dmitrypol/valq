@@ -1,5 +1,6 @@
 mod ack;
-mod admin;
+mod create;
+mod delete;
 mod extend;
 mod len;
 mod pop;
@@ -15,8 +16,8 @@ pub(crate) fn valq_cmd(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     let subcmd = args.next_string()?;
     let args: Vec<ValkeyString> = args.collect();
     match subcmd.to_lowercase().as_str() {
-        "create" => admin::create(ctx, args),
-        "delete" => admin::delete(ctx, args),
+        "create" => create::create(ctx, args),
+        "delete" => delete::delete(ctx, args),
         "push" => push::push(ctx, args),
         "pop" => pop::pop(ctx, args),
         "ack" => ack::ack(ctx, args),
