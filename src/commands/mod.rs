@@ -1,11 +1,10 @@
 mod ack;
-mod create;
-mod delete;
+mod admin;
 mod extend;
-mod len;
 mod pop;
 mod push;
 
+use admin::info;
 use valkey_module::{Context, NextArg, ValkeyResult, ValkeyString, ValkeyValue};
 
 pub(crate) fn valq_cmd(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
@@ -16,12 +15,14 @@ pub(crate) fn valq_cmd(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     let subcmd = args.next_string()?.to_lowercase();
     let args: Vec<ValkeyString> = args.collect();
     match subcmd.to_lowercase().as_str() {
-        "create" => create::create(ctx, args),
-        "delete" => delete::delete(ctx, args),
+        "create" => admin::create::create(ctx, args),
+        "delete" => admin::delete::delete(ctx, args),
+        "update" => admin::update::update(ctx, args),
+        "info" => info::info(ctx, args),
+        "purge" => admin::purge::purge(ctx, args),
         "push" => push::push(ctx, args),
         "pop" => pop::pop(ctx, args),
         "ack" => ack::ack(ctx, args),
-        "len" => len::len(ctx, args),
         "extend" => extend::extend(ctx, args),
         _ => help(),
     }
@@ -32,6 +33,9 @@ fn help() -> ValkeyResult {
         "valq - top level command".into(),
         "valq create - crate new q".into(),
         "valq delete - delete q".into(),
+        "valq update - update q".into(),
+        "valq len - info about q".into(),
+        "valq purge - purge messages in q or dlq".into(),
         "valq push - push message to q".into(),
         "valq pop - get message from q".into(),
         "valq ack - ack message completion".into(),

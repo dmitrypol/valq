@@ -3,7 +3,7 @@ use crate::structs::valq_type::ValqType;
 use std::collections::BTreeMap;
 use valkey_module::{Context, NextArg, ValkeyError, ValkeyResult, ValkeyString, ValkeyValue};
 
-pub(crate) fn len(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
+pub(crate) fn info(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     if args.len() != 1 {
         return Err(ValkeyError::WrongArity);
     }
@@ -18,11 +18,20 @@ fn handler(value: Option<&ValqType>) -> ValkeyResult {
     match value {
         Some(tmp) => {
             let output = ValkeyValue::OrderedMap(BTreeMap::from([
+                (
+                    "visibility_timeout".into(),
+                    tmp.visibility_timeout().to_string().into(),
+                ),
+                (
+                    "max_delivery_attempts".into(),
+                    tmp.max_delivery_attempts().to_string().into(),
+                ),
+                ("id_sequence".into(), tmp.id_sequence().to_string().into()),
                 ("dlq_msgs".into(), tmp.dlq_msgs().len().to_string().into()),
                 // TODO - exclude messages with timeout_at and max_delivery_attempts
                 ("msgs".into(), tmp.msgs().len().to_string().into()),
             ]));
-            Ok(output.into())
+            Ok(output)
         }
         None => Err(ValkeyError::Str("q not found")),
     }
@@ -48,7 +57,10 @@ mod tests {
             test.unwrap(),
             ValkeyValue::OrderedMap(BTreeMap::from([
                 ("dlq_msgs".into(), "0".into()),
-                ("msgs".into(), "0".into())
+                ("id_sequence".into(), "0".into()),
+                ("max_delivery_attempts".into(), "5".into()),
+                ("msgs".into(), "0".into()),
+                ("visibility_timeout".into(), "30".into()),
             ]))
         );
     }
@@ -68,7 +80,10 @@ mod tests {
             test.unwrap(),
             ValkeyValue::OrderedMap(BTreeMap::from([
                 ("dlq_msgs".into(), "1".into()),
-                ("msgs".into(), "2".into())
+                ("id_sequence".into(), "0".into()),
+                ("max_delivery_attempts".into(), "5".into()),
+                ("msgs".into(), "2".into()),
+                ("visibility_timeout".into(), "30".into())
             ]))
         );
     }

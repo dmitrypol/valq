@@ -16,13 +16,15 @@ fn test_valq() -> anyhow::Result<()> {
         utils::get_server_connection(port).with_context(|| "failed to connect to valkey server")?;
 
     let test: Vec<String> = redis::cmd("valq").query(&mut con)?;
-    assert_eq!(test.len(), 8);
+    assert_eq!(test.len(), 11);
 
-    let test: Vec<String> = redis::cmd("valq").arg(&["info"]).query(&mut con)?;
-    assert_eq!(test.len(), 8);
+    let test: Vec<String> = redis::cmd("valq").arg(&["help"]).query(&mut con)?;
+    assert_eq!(test.len(), 11);
 
     // missing arguments
-    for command in vec!["create", "delete", "push", "pop", "ack", "len", "extend"] {
+    for command in vec![
+        "create", "delete", "update", "info", "purge", "push", "pop", "ack", "extend",
+    ] {
         let test: RedisResult<String> = redis::cmd("valq").arg(&[command]).query(&mut con);
         assert!(test.is_err());
     }
@@ -84,11 +86,25 @@ fn test_valq() -> anyhow::Result<()> {
     assert_eq!(test, "2");
 
     let test: RedisResult<String> = redis::cmd("valq")
-        .arg(&["len", "invalid-q"])
+        .arg(&["info", "invalid-q"])
         .query(&mut con);
     assert!(test.is_err());
-    let test: Vec<String> = redis::cmd("valq").arg(&["len", "q1"]).query(&mut con)?;
-    assert_eq!(test, ["dlq_msgs", "0", "msgs", "2"]);
+    let test: Vec<String> = redis::cmd("valq").arg(&["info", "q1"]).query(&mut con)?;
+    assert_eq!(
+        test,
+        [
+            "dlq_msgs",
+            "0",
+            "id_sequence",
+            "2",
+            "max_delivery_attempts",
+            "2",
+            "msgs",
+            "2",
+            "visibility_timeout",
+            "1"
+        ]
+    );
     let test: Vec<String> = redis::cmd("valq").arg(&["pop", "q1"]).query(&mut con)?;
     assert_eq!(test, ["body", "msg1", "id", "1"]);
     let test: Vec<String> = redis::cmd("valq").arg(&["pop", "q1"]).query(&mut con)?;
@@ -96,9 +112,23 @@ fn test_valq() -> anyhow::Result<()> {
     // now q has no visible messages, so pop should return empty
     let test: Vec<String> = redis::cmd("valq").arg(&["pop", "q1"]).query(&mut con)?;
     assert_eq!(test, [""]);
-    let test: Vec<String> = redis::cmd("valq").arg(&["len", "q1"]).query(&mut con)?;
+    let test: Vec<String> = redis::cmd("valq").arg(&["info", "q1"]).query(&mut con)?;
     // TODO - exclude messages with timeout_at and delivery_attempts
-    assert_eq!(test, ["dlq_msgs", "0", "msgs", "2"]);
+    assert_eq!(
+        test,
+        [
+            "dlq_msgs",
+            "0",
+            "id_sequence",
+            "2",
+            "max_delivery_attempts",
+            "2",
+            "msgs",
+            "2",
+            "visibility_timeout",
+            "1"
+        ]
+    );
 
     let test: String = redis::cmd("valq")
         .arg(&["extend", "q1", "1", "1"])
@@ -134,9 +164,31 @@ fn test_valq() -> anyhow::Result<()> {
     let test: Vec<String> = redis::cmd("valq").arg(&["pop", "q1"]).query(&mut con)?;
     assert_eq!(test, [""]);
 
-    let test: Vec<String> = redis::cmd("valq").arg(&["len", "q1"]).query(&mut con)?;
+    let test: Vec<String> = redis::cmd("valq").arg(&["info", "q1"]).query(&mut con)?;
     // TODO - why is there 1 message in msgs?
-    assert_eq!(test, ["dlq_msgs", "2", "msgs", "1"]);
+    assert_eq!(
+        test,
+        [
+            "dlq_msgs",
+            "2",
+            "id_sequence",
+            "2",
+            "max_delivery_attempts",
+            "2",
+            "msgs",
+            "1",
+            "visibility_timeout",
+            "1"
+        ]
+    );
+
+    // purge messages from q1
+    let test: String = redis::cmd("valq").arg(&["purge", "q1"]).query(&mut con)?;
+    assert_eq!(test, "1");
+    let test: String = redis::cmd("valq")
+        .arg(&["purge", "q1", "dlq"])
+        .query(&mut con)?;
+    assert_eq!(test, "2");
 
     // create new message to ack
     redis::cmd("valq")
@@ -149,6 +201,43 @@ fn test_valq() -> anyhow::Result<()> {
     // ack invalid message id
     let test: RedisResult<String> = redis::cmd("valq")
         .arg(&["ack", "q1", "invalid-id"])
+        .query(&mut con);
+    assert!(test.is_err());
+
+    // update queue with custom visibility_timeout and max_delivery_attempts
+    let test: String = redis::cmd("valq")
+        .arg(&["update", "q2", "10", "10"])
+        .query(&mut con)?;
+    assert_eq!(test, "updated q");
+    let test: Vec<String> = redis::cmd("valq").arg(&["info", "q2"]).query(&mut con)?;
+    assert_eq!(
+        test,
+        [
+            "dlq_msgs",
+            "0",
+            "id_sequence",
+            "0",
+            "max_delivery_attempts",
+            "10",
+            "msgs",
+            "0",
+            "visibility_timeout",
+            "10"
+        ]
+    );
+    // update queue with invalid visibility_timeout
+    let test: RedisResult<String> = redis::cmd("valq")
+        .arg(&["update", "q2", "0", "1"])
+        .query(&mut con);
+    assert!(test.is_err());
+    // update queue with invalid max_delivery_attempts
+    let test: RedisResult<String> = redis::cmd("valq")
+        .arg(&["update", "q2", "1", "0"])
+        .query(&mut con);
+    assert!(test.is_err());
+    // update invalid queue
+    let test: RedisResult<String> = redis::cmd("valq")
+        .arg(&["update", "invalid-q", "1", "1"])
         .query(&mut con);
     assert!(test.is_err());
 
