@@ -68,7 +68,7 @@ mod tests {
 
     #[test]
     fn test_with_empty_queue_returns_nothing() {
-        let mut valq = ValqType::new(None, None);
+        let mut valq = ValqType::new(None, None).unwrap();
         let test = handler(Some(&mut valq));
         assert_eq!(test.unwrap(), ValkeyValue::BulkString("".to_string()));
         assert!(valq.msgs().is_empty());
@@ -77,7 +77,7 @@ mod tests {
 
     #[test]
     fn test_with_no_visible_message_in_queue() {
-        let mut valq = ValqType::new(None, None);
+        let mut valq = ValqType::new(None, None).unwrap();
         let msg = ValqMsg::new(1, "msg".to_string(), Some(utils::now_as_seconds() + 10), 0);
         valq.msgs_mut().push_back(msg);
         let test = handler(Some(&mut valq));
@@ -86,7 +86,7 @@ mod tests {
 
     #[test]
     fn test_with_delivery_attempts_exceeded() {
-        let mut valq = ValqType::new(None, None);
+        let mut valq = ValqType::new(None, None).unwrap();
         let msg = ValqMsg::new(1, "msg".to_string(), Some(utils::now_as_seconds()), 5);
         valq.msgs_mut().push_back(msg);
         let test = handler(Some(&mut valq));
@@ -96,7 +96,7 @@ mod tests {
 
     #[test]
     fn test_with_visible_message_in_queue() {
-        let mut valq = ValqType::new(None, None);
+        let mut valq = ValqType::new(None, None).unwrap();
         let msg = ValqMsg::new(1, "msg".to_string(), Some(utils::now_as_seconds()), 0);
         valq.msgs_mut().push_back(msg);
         let test = handler(Some(&mut valq));
@@ -106,7 +106,7 @@ mod tests {
 
     #[test]
     fn test_move_message_to_dlq_when_delivery_attempts_exceeded() {
-        let mut valq = ValqType::new(None, None);
+        let mut valq = ValqType::new(None, None).unwrap();
         let msg = ValqMsg::new(1, "msg".to_string(), Some(utils::now_as_seconds()), 5);
         valq.msgs_mut().push_back(msg);
 

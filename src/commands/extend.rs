@@ -58,14 +58,14 @@ mod tests {
 
     #[test]
     fn test_with_empty_queue() {
-        let mut valq = ValqType::new(None, None);
+        let mut valq = ValqType::new(None, None).unwrap();
         let test = handler(1, 10, Some(&mut valq));
         assert!(test.is_err());
     }
 
     #[test]
     fn test_with_valid_queue() {
-        let mut valq = ValqType::new(None, None);
+        let mut valq = ValqType::new(None, None).unwrap();
         valq.msgs_mut()
             .push_back(ValqMsg::new(1, "msg1".to_string(), None, 0));
         valq.msgs_mut()
@@ -85,7 +85,7 @@ mod tests {
 
     #[test]
     fn test_large_number_of_messages() {
-        let mut valq = ValqType::new(None, None);
+        let mut valq = ValqType::new(None, None).unwrap();
         for i in 1..=10_000 {
             valq.msgs_mut()
                 .push_back(ValqMsg::new(i, format!("msg{}", i), None, 0));

@@ -10,7 +10,7 @@ pub(crate) extern "C" fn rdb_load(
     if rdb.is_null() {
         return std::ptr::null_mut();
     }
-    let mut valq = ValqType::new(None, None);
+    let mut valq = ValqType::new(None, None).unwrap_or_default();
     // save and load must be in the same order
     // load id_sequence
     valq.set_id_sequence(match valkey_module::load_unsigned(rdb) {
@@ -18,15 +18,23 @@ pub(crate) extern "C" fn rdb_load(
         Err(_err) => return std::ptr::null_mut(),
     });
     // load visibility_timeout
-    valq.set_visibility_timeout(match valkey_module::load_unsigned(rdb) {
+    let visibility_timeout = match valkey_module::load_unsigned(rdb) {
         Ok(tmp) => tmp,
         Err(_err) => return std::ptr::null_mut(),
-    });
+    };
+    match valq.set_visibility_timeout(visibility_timeout) {
+        Ok(_) => {}
+        Err(_err) => return std::ptr::null_mut(),
+    }
     // load max_delivery_attempts
-    valq.set_max_delivery_attempts(match valkey_module::load_unsigned(rdb) {
+    let max_delivery_attempts = match valkey_module::load_unsigned(rdb) {
         Ok(tmp) => tmp,
         Err(_err) => return std::ptr::null_mut(),
-    });
+    };
+    match valq.set_max_delivery_attempts(max_delivery_attempts) {
+        Ok(_) => {}
+        Err(_err) => return std::ptr::null_mut(),
+    };
     // load the size of the msgs VecDeque
     let q_size = valkey_module::load_unsigned(rdb).unwrap_or(0) as usize;
     for _ in 0..q_size {

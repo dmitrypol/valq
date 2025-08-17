@@ -44,7 +44,7 @@ mod tests {
 
     #[test]
     fn test_with_valid_queue() {
-        let mut valq = ValqType::new(None, None);
+        let mut valq = ValqType::new(None, None).unwrap();
         let test = handler("msg1".to_string(), Some(&mut valq));
         assert_eq!(test.unwrap(), ValkeyValue::BulkString("1".to_string()));
         let test = handler("msg2".to_string(), Some(&mut valq));
@@ -53,7 +53,7 @@ mod tests {
 
     #[test]
     fn test_large_number_of_messages() {
-        let mut valq = ValqType::new(None, None);
+        let mut valq = ValqType::new(None, None).unwrap();
         for i in 1..=10_000 {
             let test = handler(format!("msg{}", i), Some(&mut valq));
             assert!(test.is_ok());

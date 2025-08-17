@@ -1,15 +1,19 @@
 use crate::structs::valq_msg::ValqMsg;
-use crate::{DELIVERY_ATTEMPTS_DEFAULT, VISIBILITY_TIMEOUT_DEFAULT};
+use crate::{
+    DELIVERY_ATTEMPTS_DEFAULT, DELIVERY_ATTEMPTS_MAX, VISIBILITY_TIMEOUT_DEFAULT,
+    VISIBILITY_TIMEOUT_MAX,
+};
 use getset::{Getters, MutGetters, Setters};
 use std::collections::VecDeque;
+use valkey_module::ValkeyError;
 
-#[derive(Debug, Clone, Getters, Setters, MutGetters)]
+#[derive(Debug, Clone, Getters, Setters, MutGetters, Default)]
 pub(crate) struct ValqType {
     #[getset(get = "pub", set = "pub")]
     id_sequence: u64,
-    #[getset(get = "pub", set = "pub")]
+    #[getset(get = "pub")]
     visibility_timeout: u64,
-    #[getset(get = "pub", set = "pub")]
+    #[getset(get = "pub")]
     max_delivery_attempts: u64,
     #[getset(get = "pub", get_mut = "pub")]
     msgs: VecDeque<ValqMsg>,
@@ -18,14 +22,60 @@ pub(crate) struct ValqType {
 }
 
 impl ValqType {
-    // TODO - add validation for visibility_timeout and max_delivery_attempts
-    pub fn new(visibility_timeout: Option<u64>, max_delivery_attempts: Option<u64>) -> Self {
-        Self {
+    pub fn new(
+        visibility_timeout: Option<u64>,
+        max_delivery_attempts: Option<u64>,
+    ) -> Result<Self, ValkeyError> {
+        if visibility_timeout.is_some()
+            && (visibility_timeout.unwrap_or_default() < 1
+                || visibility_timeout.unwrap_or_default() > VISIBILITY_TIMEOUT_MAX)
+        {
+            return Err(ValkeyError::Str(
+                "timeout must be between 1 and 43_200 seconds (12 hours)",
+            ));
+        }
+        if max_delivery_attempts.is_some()
+            && (max_delivery_attempts.unwrap_or_default() < 1
+                || max_delivery_attempts.unwrap_or_default() > DELIVERY_ATTEMPTS_MAX)
+        {
+            return Err(ValkeyError::Str(
+                "max delivery attempts must be between 1 and 20",
+            ));
+        }
+        Ok(Self {
             id_sequence: 0,
             visibility_timeout: visibility_timeout.unwrap_or(VISIBILITY_TIMEOUT_DEFAULT),
             max_delivery_attempts: max_delivery_attempts.unwrap_or(DELIVERY_ATTEMPTS_DEFAULT),
             msgs: VecDeque::new(),
             dlq_msgs: VecDeque::new(),
+        })
+    }
+
+    pub(crate) fn set_visibility_timeout(
+        &mut self,
+        visibility_timeout: u64,
+    ) -> Result<String, ValkeyError> {
+        if visibility_timeout < 1 || visibility_timeout > VISIBILITY_TIMEOUT_MAX {
+            Err(ValkeyError::Str(
+                "timeout must be between 1 and 43_200 seconds (12 hours)",
+            ))
+        } else {
+            self.visibility_timeout = visibility_timeout;
+            Ok("OK".to_string())
+        }
+    }
+
+    pub(crate) fn set_max_delivery_attempts(
+        &mut self,
+        max_delivery_attempts: u64,
+    ) -> Result<String, ValkeyError> {
+        if max_delivery_attempts < 1 || max_delivery_attempts > DELIVERY_ATTEMPTS_MAX {
+            Err(ValkeyError::Str(
+                "max delivery attempts must be between 1 and 20",
+            ))
+        } else {
+            self.max_delivery_attempts = max_delivery_attempts;
+            Ok("OK".to_string())
         }
     }
 }
@@ -37,7 +87,7 @@ mod tests {
 
     #[test]
     fn valq_type_init_empty() {
-        let valq = ValqType::new(None, None);
+        let valq = ValqType::new(None, None).unwrap();
         assert_eq!(*valq.id_sequence(), 0);
         assert_eq!(*valq.visibility_timeout(), VISIBILITY_TIMEOUT_DEFAULT);
         assert_eq!(*valq.max_delivery_attempts(), DELIVERY_ATTEMPTS_DEFAULT);
@@ -47,14 +97,26 @@ mod tests {
 
     #[test]
     fn valq_type_custom_timeout_max_delivery_attempts() {
-        let valq = ValqType::new(Some(3600), Some(10));
+        let valq = ValqType::new(Some(3600), Some(10)).unwrap();
         assert_eq!(*valq.visibility_timeout(), 3600);
         assert_eq!(*valq.max_delivery_attempts(), 10);
     }
 
     #[test]
+    fn valq_type_visibility_timeout_max_delivery_attempts_invalid() {
+        let test = ValqType::new(Some(0), None);
+        assert!(test.is_err());
+        let test = ValqType::new(Some(VISIBILITY_TIMEOUT_MAX + 1), None);
+        assert!(test.is_err());
+        let test = ValqType::new(None, Some(0));
+        assert!(test.is_err());
+        let test = ValqType::new(None, Some(DELIVERY_ATTEMPTS_MAX + 1));
+        assert!(test.is_err());
+    }
+
+    #[test]
     fn valq_type_add_remove_msgs() {
-        let mut valq = ValqType::new(None, None);
+        let mut valq = ValqType::new(None, None).unwrap();
         let msg1 = ValqMsg::new(1, "msg1".to_string(), None, 0);
         let msg2 = ValqMsg::new(2, "msg2".to_string(), None, 0);
         valq.msgs_mut().push_back(msg1);
@@ -68,8 +130,8 @@ mod tests {
     }
 
     #[test]
-    fn valq_type_updates_id_sequence() {
-        let mut valq = ValqType::new(None, None);
+    fn valq_type_update_id_sequence() {
+        let mut valq = ValqType::new(None, None).unwrap();
         valq.set_id_sequence(5);
         assert_eq!(*valq.id_sequence(), 5);
         valq.set_id_sequence(valq.id_sequence() + 1);
@@ -78,10 +140,30 @@ mod tests {
 
     #[test]
     fn valq_type_update_visibility_timeout_max_delivery_attempts() {
-        let mut valq = ValqType::new(None, None);
-        valq.set_visibility_timeout(7200);
+        let mut valq = ValqType::new(None, None).unwrap();
+        let _ = valq.set_visibility_timeout(7200);
         assert_eq!(*valq.visibility_timeout(), 7200);
-        valq.set_max_delivery_attempts(10);
+        let _ = valq.set_max_delivery_attempts(10);
         assert_eq!(*valq.max_delivery_attempts(), 10);
+    }
+
+    #[test]
+    fn valq_type_set_visibility_timeout_invalid() {
+        let mut valq = ValqType::new(None, None).unwrap();
+        let test = valq.set_visibility_timeout(0);
+        assert!(test.is_err());
+        let test = valq.set_visibility_timeout(VISIBILITY_TIMEOUT_MAX + 1);
+        assert!(test.is_err());
+        assert_eq!(*valq.visibility_timeout(), VISIBILITY_TIMEOUT_DEFAULT);
+    }
+
+    #[test]
+    fn valq_type_set_max_delivery_attempts_invalid() {
+        let mut valq = ValqType::new(None, None).unwrap();
+        let test = valq.set_max_delivery_attempts(0);
+        assert!(test.is_err());
+        let test = valq.set_max_delivery_attempts(DELIVERY_ATTEMPTS_MAX + 1);
+        assert!(test.is_err());
+        assert_eq!(*valq.max_delivery_attempts(), DELIVERY_ATTEMPTS_DEFAULT);
     }
 }
