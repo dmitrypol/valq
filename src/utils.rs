@@ -13,3 +13,32 @@ pub(crate) fn valid_server_version(version: Version) -> bool {
     let server_version = &[version.major, version.minor, version.patch];
     server_version >= MIN_VALID_SERVER_VERSION
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_valid_server_version() {
+        let version = Version {
+            major: 7,
+            minor: 2,
+            patch: 8,
+        };
+        assert!(valid_server_version(version));
+
+        let version = Version {
+            major: 7,
+            minor: 2,
+            patch: 9,
+        };
+        assert!(valid_server_version(version));
+
+        let version = Version {
+            major: 7,
+            minor: 2,
+            patch: 7,
+        };
+        assert!(!valid_server_version(version));
+    }
+}

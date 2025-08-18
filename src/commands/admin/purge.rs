@@ -6,7 +6,7 @@ use valkey_module::{Context, NextArg, ValkeyError, ValkeyResult, ValkeyString};
 pub(crate) fn purge(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     if args.len() != 1 && args.len() != 2 {
         return Err(ValkeyError::Str(
-            "specify q name and optionally q type (main or dlq)",
+            "specify q name and optionally q type (main, dlq or delayed)",
         ));
     }
     let mut args = args.into_iter();
@@ -30,6 +30,11 @@ fn handler(q_type: QType, value: Option<&mut ValqType>) -> ValkeyResult {
                 tmp.dlq_msgs_mut().clear();
                 Ok(msgs_count.into())
             }
+            QType::Delayed => {
+                let msgs_count = tmp.delayed_msgs().len() as usize;
+                tmp.delayed_msgs_mut().clear();
+                Ok(msgs_count.into())
+            }
         },
         None => Err(ValkeyError::Str("q not found")),
     }
@@ -48,6 +53,8 @@ mod tests {
         assert!(test.is_err());
         let test = handler(QType::Dlq, None);
         assert!(test.is_err());
+        let test = handler(QType::Delayed, None);
+        assert!(test.is_err());
     }
 
     #[test]
@@ -56,6 +63,8 @@ mod tests {
         let test = handler(QType::Main, Some(&mut valq));
         assert_eq!(test.unwrap(), ValkeyValue::Integer(0));
         let test = handler(QType::Dlq, Some(&mut valq));
+        assert_eq!(test.unwrap(), ValkeyValue::Integer(0));
+        let test = handler(QType::Delayed, Some(&mut valq));
         assert_eq!(test.unwrap(), ValkeyValue::Integer(0));
     }
 
@@ -68,10 +77,14 @@ mod tests {
         valq.msgs_mut().push_back(msg2);
         let dlq_msg = ValqMsg::new(3, "msg".to_string(), None, 5);
         valq.dlq_msgs_mut().push_back(dlq_msg);
+        let delayed_msg = ValqMsg::new(4, "msg".to_string(), None, 0);
+        valq.delayed_msgs_mut().insert(delayed_msg, 1);
 
         let test = handler(QType::Main, Some(&mut valq));
         assert_eq!(test.unwrap(), ValkeyValue::Integer(2));
         let test = handler(QType::Dlq, Some(&mut valq));
+        assert_eq!(test.unwrap(), ValkeyValue::Integer(1));
+        let test = handler(QType::Delayed, Some(&mut valq));
         assert_eq!(test.unwrap(), ValkeyValue::Integer(1));
     }
 }

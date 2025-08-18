@@ -29,7 +29,7 @@ valkey_module! {
     version: 1,
     allocator: (ValkeyAlloc, ValkeyAlloc),
     data_types: [VALQ_TYPE],
-        preload: preload,
+    preload: preload,
     commands: [
         ["valq", valq_cmd, "", 0, 0, 0],
     ],

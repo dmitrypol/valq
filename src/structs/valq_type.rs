@@ -1,3 +1,4 @@
+use crate::structs::delayed_msgs::DelayedMsgs;
 use crate::structs::valq_msg::ValqMsg;
 use crate::{
     DELIVERY_ATTEMPTS_DEFAULT, DELIVERY_ATTEMPTS_MAX, VISIBILITY_TIMEOUT_DEFAULT,
@@ -8,7 +9,7 @@ use std::collections::VecDeque;
 use valkey_module::ValkeyError;
 
 /// Represents a job queue with configurable visibility timeout and maximum delivery attempts.
-/// This structure manages a queue of messages and a dead-letter queue for failed messages.
+/// This structure manages a queue of messages, delayed messages and a dead-letter queue for failed messages.
 #[derive(Debug, Clone, Getters, Setters, MutGetters, Default)]
 pub(crate) struct ValqType {
     /// Sequence ID for generating unique message IDs.
@@ -26,6 +27,9 @@ pub(crate) struct ValqType {
     /// Dead-letter queue for messages that failed to process after maximum delivery attempts.
     #[getset(get = "pub", get_mut = "pub")]
     dlq_msgs: VecDeque<ValqMsg>,
+    /// Delayed messages that are scheduled to be processed after a certain time.
+    #[getset(get = "pub", get_mut = "pub")]
+    delayed_msgs: DelayedMsgs,
 }
 
 impl ValqType {
@@ -69,6 +73,7 @@ impl ValqType {
             max_delivery_attempts: max_delivery_attempts.unwrap_or(DELIVERY_ATTEMPTS_DEFAULT),
             msgs: VecDeque::new(),
             dlq_msgs: VecDeque::new(),
+            delayed_msgs: DelayedMsgs::new(),
         })
     }
 

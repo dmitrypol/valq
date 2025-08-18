@@ -11,6 +11,7 @@ This project is designed to provide a lightweight and efficient job queue system
 * on message completion consumer does explicit ack specifying the message ID which removed the message from the queue
 * max delivery attempts - the maximum number of times a message can be delivered to consumers before it is moved to the dead letter queue (DLQ)
 * dead letter queue - store messages that failed to be processed after the maximum number of delivery attempts
+* delayed message delivery - push messages to the queue with optional delay in seconds
 
 ## Commands
 ```
@@ -18,9 +19,9 @@ valq - top level command
 valq create - create new q
 valq delete - delete q
 valq update - update q
-valq len - info about q
-valq purge - purge messages in q or dlq
-valq push - push message to q
+valq info - info about q
+valq purge - purge messages in q, dlq or delayed q
+valq push - push message to q, optionally with delay
 valq pop - get message from q
 valq ack - ack message completion
 valq extend - extend message to have more time to complete it
@@ -33,11 +34,10 @@ valq help - display help information
 ## Questions
 
 ### How is this different from other job queues?
-Valkey gives us speed, rich library ecosystem and features such as replication and persistence.  We can also support delayed message delivery with sorted sets type, which is not available in many other job queues.
+Valkey gives us speed, rich library ecosystem and features such as replication and persistence.  Valq module supports delayed message delivery (u64 seconds enables up to ~585 billion years in the future), which is not available in many other job queues.
 
 ### Does this need to be a module?
-While it is possible to implement a job queue using Valkey's existing data structures, such as lists, sorted sets and hashes,
-this approach can lead to client side complexity where libraries in different languages have to implement the same logic.
+While it is possible to implement a job queue using Valkey's existing data structures, such as lists, sorted sets and hashes, this approach can lead to client side complexity where libraries in different languages have to implement the same logic.
 By creating a dedicated module, we can provide a consistent and efficient implementation that can be used across different languages and applications.
 
 ### Does this module need to be built in Rust?

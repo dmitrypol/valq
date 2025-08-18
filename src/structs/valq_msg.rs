@@ -4,7 +4,7 @@ use std::collections::BTreeMap;
 use valkey_module::ValkeyValue;
 
 /// Represents a message in the queue with metadata such as ID, body, timeout, and delivery attempts.
-#[derive(Debug, Clone, Default, Getters, Setters)]
+#[derive(Debug, Clone, Default, Getters, Setters, Ord, Eq, PartialEq, PartialOrd, Hash)]
 pub(crate) struct ValqMsg {
     /// Unique identifier for the message.
     #[getset(get = "pub")]
@@ -109,22 +109,19 @@ mod tests {
 
     #[test]
     fn timeout_at_current_time() {
-        let current_timeout = Some(now_as_seconds());
-        let msg = ValqMsg::new(42, "test msg".to_string(), current_timeout, 0);
+        let msg = ValqMsg::new(42, "test msg".to_string(), Some(now_as_seconds()), 0);
         assert!(msg.check_timeout_at());
     }
 
     #[test]
     fn timeout_in_past() {
-        let past_timeout = Some(now_as_seconds() - 10);
-        let msg = ValqMsg::new(42, "test msg".to_string(), past_timeout, 0);
+        let msg = ValqMsg::new(42, "test msg".to_string(), Some(now_as_seconds() - 10), 0);
         assert!(msg.check_timeout_at());
     }
 
     #[test]
     fn timeout_in_future() {
-        let future_timeout = Some(now_as_seconds() + 10);
-        let msg = ValqMsg::new(42, "test msg".to_string(), future_timeout, 0);
+        let msg = ValqMsg::new(42, "test msg".to_string(), Some(now_as_seconds() + 10), 0);
         assert!(!msg.check_timeout_at());
     }
 

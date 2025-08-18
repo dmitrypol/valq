@@ -30,6 +30,10 @@ fn handler(value: Option<&ValqType>) -> ValkeyResult {
                 ("dlq_msgs".into(), tmp.dlq_msgs().len().to_string().into()),
                 // TODO - exclude messages with timeout_at and max_delivery_attempts
                 ("msgs".into(), tmp.msgs().len().to_string().into()),
+                (
+                    "delayed_msgs".into(),
+                    tmp.delayed_msgs().len().to_string().into(),
+                ),
             ]));
             Ok(output)
         }
@@ -56,6 +60,7 @@ mod tests {
         assert_eq!(
             test.unwrap(),
             ValkeyValue::OrderedMap(BTreeMap::from([
+                ("delayed_msgs".into(), "0".into()),
                 ("dlq_msgs".into(), "0".into()),
                 ("id_sequence".into(), "0".into()),
                 ("max_delivery_attempts".into(), "5".into()),
@@ -79,6 +84,7 @@ mod tests {
         assert_eq!(
             test.unwrap(),
             ValkeyValue::OrderedMap(BTreeMap::from([
+                ("delayed_msgs".into(), "0".into()),
                 ("dlq_msgs".into(), "1".into()),
                 ("id_sequence".into(), "0".into()),
                 ("max_delivery_attempts".into(), "5".into()),
