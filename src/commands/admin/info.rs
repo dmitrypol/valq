@@ -5,7 +5,7 @@ use valkey_module::{Context, NextArg, ValkeyError, ValkeyResult, ValkeyString, V
 
 pub(crate) fn info(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     if args.len() != 1 {
-        return Err(ValkeyError::WrongArity);
+        return Err(ValkeyError::Str("specify q name"));
     }
     let mut args = args.into_iter();
     let key_arg = args.next_arg()?;

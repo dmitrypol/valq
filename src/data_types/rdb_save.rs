@@ -2,6 +2,19 @@ use crate::structs::valq_type::ValqType;
 use std::os::raw::c_void;
 use valkey_module::logging::log_notice;
 
+/// Saves the state of a `ValqType` instance to the Valkey database.
+///
+/// This function is called by the Valkey module to persist the state of a `ValqType`
+/// instance. It serializes the fields of the `ValqType` and its associated messages
+/// in a specific order to ensure compatibility with the corresponding load function.
+///
+/// # Arguments
+/// * `rdb` - A pointer to the RedisModuleIO structure used for saving data.
+/// * `value` - A pointer to the `ValqType` instance to be saved.
+///
+/// # Safety
+/// This function uses unsafe code to dereference raw pointers. It ensures that
+/// the pointers are not null before accessing the data.
 pub(crate) extern "C" fn rdb_save(rdb: *mut valkey_module::RedisModuleIO, value: *mut c_void) {
     if value.is_null() || rdb.is_null() {
         return;

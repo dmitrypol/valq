@@ -7,21 +7,42 @@ use getset::{Getters, MutGetters, Setters};
 use std::collections::VecDeque;
 use valkey_module::ValkeyError;
 
+/// Represents a job queue with configurable visibility timeout and maximum delivery attempts.
+/// This structure manages a queue of messages and a dead-letter queue for failed messages.
 #[derive(Debug, Clone, Getters, Setters, MutGetters, Default)]
 pub(crate) struct ValqType {
+    /// Sequence ID for generating unique message IDs.
     #[getset(get = "pub", set = "pub")]
     id_sequence: u64,
+    /// Visibility timeout for messages in seconds.
     #[getset(get = "pub")]
     visibility_timeout: u64,
+    /// Maximum number of delivery attempts for a message before moving it to the dead-letter queue.
     #[getset(get = "pub")]
     max_delivery_attempts: u64,
+    /// Queue of messages currently being processed.
     #[getset(get = "pub", get_mut = "pub")]
     msgs: VecDeque<ValqMsg>,
+    /// Dead-letter queue for messages that failed to process after maximum delivery attempts.
     #[getset(get = "pub", get_mut = "pub")]
     dlq_msgs: VecDeque<ValqMsg>,
 }
 
 impl ValqType {
+    /// Creates a new `ValqType` instance with optional visibility timeout and maximum delivery attempts.
+    ///
+    /// # Arguments
+    /// * `visibility_timeout` - Optional visibility timeout in seconds. Defaults to `VISIBILITY_TIMEOUT_DEFAULT`.
+    /// * `max_delivery_attempts` - Optional maximum delivery attempts. Defaults to `DELIVERY_ATTEMPTS_DEFAULT`.
+    ///
+    /// # Returns
+    /// * `Ok(Self)` - If the provided arguments are valid.
+    /// * `Err(ValkeyError)` - If the arguments are out of the allowed range.
+    ///
+    /// # Errors
+    /// Returns an error if:
+    /// * `visibility_timeout` is less than 1 or greater than `VISIBILITY_TIMEOUT_MAX`.
+    /// * `max_delivery_attempts` is less than 1 or greater than `DELIVERY_ATTEMPTS_MAX`.
     pub fn new(
         visibility_timeout: Option<u64>,
         max_delivery_attempts: Option<u64>,

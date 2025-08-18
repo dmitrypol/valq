@@ -7,7 +7,7 @@ use valkey_module::{Context, NextArg, ValkeyError, ValkeyResult, ValkeyString};
 
 pub(crate) fn pop(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     if args.is_empty() {
-        return Err(ValkeyError::WrongArity);
+        return Err(ValkeyError::Str("specify q name"));
     }
     let mut args = args.into_iter();
     let key_arg = args.next_arg()?;
@@ -43,7 +43,7 @@ fn handler(value: Option<&mut ValqType>) -> ValkeyResult {
                 // return the message
                 return Ok(msg.clone().into());
             }
-            // remove from msgs and add to dlg_msgs
+            // remove from msgs and add to dlq_msgs
             for (index, msg) in max_delivery_attempts_msgs {
                 tmp.msgs_mut().remove(index);
                 tmp.dlq_msgs_mut().push_back(msg);

@@ -7,7 +7,7 @@ use valkey_module::{Context, NextArg, ValkeyError, ValkeyResult, ValkeyString};
 
 pub(crate) fn extend(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     if args.len() != 3 {
-        return Err(ValkeyError::WrongArity);
+        return Err(ValkeyError::Str("specify q name and message ID"));
     }
     let mut args = args.into_iter();
     let key_arg = args.next_arg()?;

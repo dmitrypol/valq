@@ -2,7 +2,7 @@ use valkey_module::{Context, ValkeyError, ValkeyResult, ValkeyString};
 
 pub(crate) fn delete(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     if args.len() != 1 {
-        return Err(ValkeyError::WrongArity);
+        return Err(ValkeyError::Str("specify q name"));
     }
     let key = ctx.open_key_writable(&args[0]);
     match key.delete() {

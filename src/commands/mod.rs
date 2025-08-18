@@ -31,7 +31,7 @@ pub(crate) fn valq_cmd(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
 fn help() -> ValkeyResult {
     let output: Vec<ValkeyValue> = vec![
         "valq - top level command".into(),
-        "valq create - crate new q".into(),
+        "valq create - create new q".into(),
         "valq delete - delete q".into(),
         "valq update - update q".into(),
         "valq len - info about q".into(),

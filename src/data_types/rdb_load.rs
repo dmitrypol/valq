@@ -3,6 +3,23 @@ use crate::structs::valq_type::ValqType;
 use std::os::raw::c_void;
 use valkey_module::logging::log_notice;
 
+/// Loads the state of a `ValqType` instance from the Valkey database.
+///
+/// This function is called by the Valkey module to restore the state of a `ValqType`
+/// instance. It deserializes the fields of the `ValqType` and its associated messages
+/// in the same order they were saved to ensure compatibility with the corresponding save function.
+///
+/// # Arguments
+/// * `rdb` - A pointer to the RedisModuleIO structure used for loading data.
+/// * `_encver` - The encoding version of the data being loaded.
+///
+/// # Returns
+/// * A pointer to the newly created `ValqType` instance if successful.
+/// * A null pointer if an error occurs during the loading process.
+///
+/// # Safety
+/// This function uses unsafe code to dereference raw pointers. It ensures that
+/// the pointers are not null before accessing the data.
 pub(crate) extern "C" fn rdb_load(
     rdb: *mut valkey_module::RedisModuleIO,
     _encver: i32,

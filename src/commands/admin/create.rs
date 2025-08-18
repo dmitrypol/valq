@@ -5,7 +5,9 @@ use valkey_module::{Context, NextArg, ValkeyError, ValkeyResult, ValkeyString};
 
 pub(crate) fn create(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     if args.is_empty() {
-        return Err(ValkeyError::WrongArity);
+        return Err(ValkeyError::Str(
+            "specify q name, visibility timeout and max delivery attempts",
+        ));
     }
     let mut args = args.into_iter();
     let key_arg = args.next_arg()?;

@@ -3,19 +3,37 @@ use getset::{Getters, Setters};
 use std::collections::BTreeMap;
 use valkey_module::ValkeyValue;
 
+/// Represents a message in the queue with metadata such as ID, body, timeout, and delivery attempts.
 #[derive(Debug, Clone, Default, Getters, Setters)]
 pub(crate) struct ValqMsg {
+    /// Unique identifier for the message.
     #[getset(get = "pub")]
     id: u64,
+
+    /// The content or payload of the message.
     #[getset(get = "pub")]
     body: String,
+
+    /// Optional timeout timestamp (in seconds) indicating when the message expires.
     #[getset(get = "pub", set = "pub")]
     timeout_at: Option<u64>,
+
+    /// The number of times the message has been delivered.
     #[getset(get = "pub", set = "pub")]
     delivery_attempts: u64,
 }
 
 impl ValqMsg {
+    /// Creates a new `ValqMsg` instance.
+    ///
+    /// # Arguments
+    /// * `id` - Unique identifier for the message.
+    /// * `body` - The content or payload of the message.
+    /// * `timeout_at` - Optional timeout timestamp (in seconds).
+    /// * `delivery_attempts` - Initial number of delivery attempts.
+    ///
+    /// # Returns
+    /// A new `ValqMsg` instance with the provided values.
     pub(crate) fn new(
         id: u64,
         body: String,
@@ -30,21 +48,36 @@ impl ValqMsg {
         }
     }
 
+    /// Checks if the message has expired based on its `timeout_at` value.
+    ///
+    /// # Returns
+    /// * `true` - If `timeout_at` is `None` or the timeout is in the past.
+    /// * `false` - If the timeout is in the future.
     pub(crate) fn check_timeout_at(&self) -> bool {
-        // return true if without timeout_at or with timeout_at in the past
         match self.timeout_at {
             Some(timeout) => timeout <= utils::now_as_seconds(),
             None => true,
         }
     }
 
+    /// Checks if the message can still be delivered based on the maximum allowed delivery attempts.
+    ///
+    /// # Arguments
+    /// * `max_delivery_attempts` - The maximum number of delivery attempts allowed.
+    ///
+    /// # Returns
+    /// * `true` - If the current delivery attempts are less than the maximum allowed.
+    /// * `false` - If the delivery attempts have reached or exceeded the maximum allowed.
     pub(crate) fn check_max_delivery_attempts(&self, max_delivery_attempts: u64) -> bool {
-        // return true if delivery_attempts is less than max_delivery_attempts so message can be processed
         self.delivery_attempts < max_delivery_attempts
     }
 }
 
 impl From<ValqMsg> for ValkeyValue {
+    /// Converts a `ValqMsg` instance into a `ValkeyValue` representation.
+    ///
+    /// # Returns
+    /// A `ValkeyValue::OrderedMap` containing the message's ID and body as key-value pairs.
     fn from(msg: ValqMsg) -> Self {
         ValkeyValue::OrderedMap(BTreeMap::from([
             ("id".into(), msg.id().to_string().into()),
