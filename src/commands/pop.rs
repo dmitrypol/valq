@@ -2,10 +2,12 @@ use crate::data_types::VALQ_TYPE;
 use crate::structs::valq_msg::ValqMsg;
 use crate::structs::valq_type::ValqType;
 use crate::utils;
+use crate::utils::replicate_cmd_check;
 use std::collections::VecDeque;
 use valkey_module::{Context, NextArg, ValkeyError, ValkeyResult, ValkeyString};
 
 pub(crate) fn pop(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
+    replicate_cmd_check(ctx)?;
     if args.is_empty() {
         return Err(ValkeyError::Str("specify q name"));
     }

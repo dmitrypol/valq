@@ -1,6 +1,8 @@
+use crate::utils::replicate_cmd_check;
 use valkey_module::{Context, ValkeyError, ValkeyResult, ValkeyString};
 
 pub(crate) fn delete(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
+    replicate_cmd_check(ctx)?;
     if args.len() != 1 {
         return Err(ValkeyError::Str("specify q name"));
     }

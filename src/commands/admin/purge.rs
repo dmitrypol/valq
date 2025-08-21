@@ -1,9 +1,11 @@
 use crate::data_types::VALQ_TYPE;
 use crate::structs::q_type::QType;
 use crate::structs::valq_type::ValqType;
+use crate::utils::replicate_cmd_check;
 use valkey_module::{Context, NextArg, ValkeyError, ValkeyResult, ValkeyString};
 
 pub(crate) fn purge(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
+    replicate_cmd_check(ctx)?;
     if args.len() != 1 && args.len() != 2 {
         return Err(ValkeyError::Str(
             "specify q name and optionally q type (main, dlq or delayed)",

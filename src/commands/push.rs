@@ -2,9 +2,11 @@ use crate::data_types::VALQ_TYPE;
 use crate::structs::valq_msg::ValqMsg;
 use crate::structs::valq_type::ValqType;
 use crate::utils;
+use crate::utils::replicate_cmd_check;
 use valkey_module::{Context, NextArg, ValkeyError, ValkeyResult, ValkeyString};
 
 pub(crate) fn push(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
+    replicate_cmd_check(ctx)?;
     if args.len() != 2 && args.len() != 3 {
         return Err(ValkeyError::Str(
             "specify q name, message and optional delay",

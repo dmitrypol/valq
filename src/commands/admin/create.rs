@@ -1,9 +1,11 @@
 use crate::data_types::VALQ_TYPE;
 use crate::structs::valq_type::ValqType;
+use crate::utils::replicate_cmd_check;
 use crate::{DELIVERY_ATTEMPTS_DEFAULT, VISIBILITY_TIMEOUT_DEFAULT};
 use valkey_module::{Context, NextArg, ValkeyError, ValkeyResult, ValkeyString};
 
 pub(crate) fn create(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
+    replicate_cmd_check(ctx)?;
     if args.is_empty() {
         return Err(ValkeyError::Str(
             "specify q name, visibility timeout and max delivery attempts",
