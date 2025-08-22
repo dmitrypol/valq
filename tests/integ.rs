@@ -64,9 +64,9 @@ mod tests {
             .query(&mut con);
         assert!(test.is_err());
 
-        // create queue with custom visibility_timeout of 1 second and max_delivery_attempts 2
+        // create queue with custom visibility_timeout of 1 second, max_delivery_attempts 2, retention_period 300 seconds
         let test: String = redis::cmd("valq")
-            .arg(&["create", "q1", "1", "2"])
+            .arg(&["create", "q1", "1", "2", "300"])
             .query(&mut con)?;
         assert_eq!(test, "created q");
         // duplicate queue name, should fail
@@ -107,6 +107,8 @@ mod tests {
                 "2",
                 "msgs",
                 "2",
+                "retention_period",
+                "300",
                 "visibility_timeout",
                 "1"
             ]
@@ -133,6 +135,8 @@ mod tests {
                 "2",
                 "msgs",
                 "2",
+                "retention_period",
+                "300",
                 "visibility_timeout",
                 "1"
             ]
@@ -187,6 +191,8 @@ mod tests {
                 "2",
                 "msgs",
                 "1",
+                "retention_period",
+                "300",
                 "visibility_timeout",
                 "1"
             ]
@@ -258,6 +264,8 @@ mod tests {
                 "10",
                 "msgs",
                 "0",
+                "retention_period",
+                "86400",
                 "visibility_timeout",
                 "10"
             ]

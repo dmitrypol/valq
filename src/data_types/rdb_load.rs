@@ -24,7 +24,7 @@ pub(crate) extern "C" fn rdb_load(rdb: *mut RedisModuleIO, _encver: i32) -> *mut
     if rdb.is_null() {
         return std::ptr::null_mut();
     }
-    let mut valq = ValqType::new("", None, None).unwrap_or_default();
+    let mut valq = ValqType::new("", None, None, None).unwrap_or_default();
 
     for loader in [
         load_valq_attributes,
@@ -55,6 +55,9 @@ fn load_valq_attributes(rdb: *mut RedisModuleIO, valq: &mut ValqType) -> Option<
 
     let max_delivery_attempts = load_unsigned(rdb).ok()?;
     valq.set_max_delivery_attempts(max_delivery_attempts).ok()?;
+
+    let retention_period = load_unsigned(rdb).ok()?;
+    valq.set_retention_period(retention_period).ok()?;
 
     None
 }

@@ -1,3 +1,5 @@
+pub(crate) mod retention_period_gc;
+
 use crate::MIN_VALID_SERVER_VERSION;
 use std::time::{SystemTime, UNIX_EPOCH};
 use valkey_module::{Context, ContextFlags, ValkeyError, ValkeyResult, Version};

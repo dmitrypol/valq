@@ -40,6 +40,8 @@ fn save_valq_attributes(rdb: *mut RedisModuleIO, item: &ValqType) {
     save_unsigned(rdb, *item.visibility_timeout());
     // save max_delivery_attempts
     save_unsigned(rdb, *item.max_delivery_attempts());
+    // save retention_period
+    save_unsigned(rdb, *item.retention_period());
 }
 
 fn save_msgs_attributes(rdb: *mut RedisModuleIO, item: &ValqType) {

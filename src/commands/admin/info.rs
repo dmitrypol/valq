@@ -26,6 +26,10 @@ fn handler(value: Option<&ValqType>) -> ValkeyResult {
                     "max_delivery_attempts".into(),
                     tmp.max_delivery_attempts().to_string().into(),
                 ),
+                (
+                    "retention_period".into(),
+                    tmp.retention_period().to_string().into(),
+                ),
                 ("id_sequence".into(), tmp.id_sequence().to_string().into()),
                 ("dlq_msgs".into(), tmp.dlq_msgs().len().to_string().into()),
                 // TODO - exclude messages with timeout_at and max_delivery_attempts
@@ -55,7 +59,7 @@ mod tests {
 
     #[test]
     fn test_with_empty_queue() {
-        let valq = ValqType::new("q", None, None).unwrap();
+        let valq = ValqType::new("q", None, None, None).unwrap();
         let test = handler(Some(&valq));
         assert_eq!(
             test.unwrap(),
@@ -65,6 +69,7 @@ mod tests {
                 ("id_sequence".into(), "0".into()),
                 ("max_delivery_attempts".into(), "5".into()),
                 ("msgs".into(), "0".into()),
+                ("retention_period".into(), "86400".into()),
                 ("visibility_timeout".into(), "30".into()),
             ]))
         );
@@ -72,7 +77,7 @@ mod tests {
 
     #[test]
     fn test_with_valid_queue() {
-        let mut valq = ValqType::new("q", None, None).unwrap();
+        let mut valq = ValqType::new("q", None, None, None).unwrap();
         valq.msgs_mut()
             .push_back(ValqMsg::new(1, "msg1".to_string(), None, 0));
         valq.msgs_mut()
@@ -89,6 +94,7 @@ mod tests {
                 ("id_sequence".into(), "0".into()),
                 ("max_delivery_attempts".into(), "5".into()),
                 ("msgs".into(), "2".into()),
+                ("retention_period".into(), "86400".into()),
                 ("visibility_timeout".into(), "30".into())
             ]))
         );

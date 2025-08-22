@@ -56,7 +56,7 @@ mod tests {
 
     #[test]
     fn test_with_valid_queue() {
-        let mut valq = ValqType::new("q", None, None).unwrap();
+        let mut valq = ValqType::new("q", None, None, None).unwrap();
         let test = handler("msg1".to_string(), 0, Some(&mut valq));
         assert_eq!(test.unwrap(), ValkeyValue::BulkString("1".to_string()));
         let test = handler("msg2".to_string(), 0, Some(&mut valq));
@@ -65,7 +65,7 @@ mod tests {
 
     #[test]
     fn test_large_number_of_messages() {
-        let mut valq = ValqType::new("q", None, None).unwrap();
+        let mut valq = ValqType::new("q", None, None, None).unwrap();
         for i in 1..=10_000 {
             let test = handler(format!("msg{}", i), 0, Some(&mut valq));
             assert!(test.is_ok());
@@ -76,7 +76,7 @@ mod tests {
 
     #[test]
     fn test_with_delayed_message() {
-        let mut valq = ValqType::new("q", None, None).unwrap();
+        let mut valq = ValqType::new("q", None, None, None).unwrap();
         let test = handler("delayed_msg".to_string(), 1, Some(&mut valq));
         assert_eq!(test.unwrap(), ValkeyValue::BulkString("1".to_string()));
         assert_eq!(valq.delayed_msgs().len(), 1);
