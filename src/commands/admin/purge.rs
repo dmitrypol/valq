@@ -61,7 +61,7 @@ mod tests {
 
     #[test]
     fn test_with_empty_queue() {
-        let mut valq = ValqType::new(None, None).unwrap();
+        let mut valq = ValqType::new("q", None, None).unwrap();
         let test = handler(QType::Main, Some(&mut valq));
         assert_eq!(test.unwrap(), ValkeyValue::Integer(0));
         let test = handler(QType::Dlq, Some(&mut valq));
@@ -72,7 +72,7 @@ mod tests {
 
     #[test]
     fn test_with_valid_queue() {
-        let mut valq = ValqType::new(None, None).unwrap();
+        let mut valq = ValqType::new("q", None, None).unwrap();
         let msg1 = ValqMsg::new(1, "msg".to_string(), None, 0);
         valq.msgs_mut().push_back(msg1);
         let msg2 = ValqMsg::new(2, "msg".to_string(), None, 0);

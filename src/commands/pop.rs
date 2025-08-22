@@ -101,7 +101,7 @@ mod tests {
 
     #[test]
     fn test_with_empty_queue_returns_nothing() {
-        let mut valq = ValqType::new(None, None).unwrap();
+        let mut valq = ValqType::new("q", None, None).unwrap();
         let test = handler(Some(&mut valq));
         assert_eq!(test.unwrap(), ValkeyValue::BulkString("".to_string()));
         assert!(valq.msgs().is_empty());
@@ -110,7 +110,7 @@ mod tests {
 
     #[test]
     fn test_with_no_visible_message_in_queue() {
-        let mut valq = ValqType::new(None, None).unwrap();
+        let mut valq = ValqType::new("q", None, None).unwrap();
         let msg = ValqMsg::new(1, "msg".to_string(), Some(utils::now_as_seconds() + 10), 0);
         valq.msgs_mut().push_back(msg);
         let test = handler(Some(&mut valq));
@@ -119,7 +119,7 @@ mod tests {
 
     #[test]
     fn test_with_delivery_attempts_exceeded() {
-        let mut valq = ValqType::new(None, None).unwrap();
+        let mut valq = ValqType::new("q", None, None).unwrap();
         let msg = ValqMsg::new(1, "msg".to_string(), Some(utils::now_as_seconds()), 5);
         valq.msgs_mut().push_back(msg);
         let test = handler(Some(&mut valq));
@@ -129,7 +129,7 @@ mod tests {
 
     #[test]
     fn test_with_visible_message_in_queue() {
-        let mut valq = ValqType::new(None, None).unwrap();
+        let mut valq = ValqType::new("q", None, None).unwrap();
         let msg = ValqMsg::new(1, "msg".to_string(), Some(utils::now_as_seconds()), 0);
         valq.msgs_mut().push_back(msg);
         let test = handler(Some(&mut valq));
@@ -139,7 +139,7 @@ mod tests {
 
     #[test]
     fn test_move_message_to_dlq_when_delivery_attempts_exceeded() {
-        let mut valq = ValqType::new(None, None).unwrap();
+        let mut valq = ValqType::new("q", None, None).unwrap();
         let msg = ValqMsg::new(1, "msg".to_string(), Some(utils::now_as_seconds()), 5);
         valq.msgs_mut().push_back(msg);
 
@@ -152,7 +152,7 @@ mod tests {
 
     #[test]
     fn test_move_delayed_msgs_to_main_q_moves_ready_messages() {
-        let mut valq = ValqType::new(None, None).unwrap();
+        let mut valq = ValqType::new("q", None, None).unwrap();
         let msg1 = ValqMsg::new(1, "msg1".to_string(), None, 0);
         let msg2 = ValqMsg::new(2, "msg2".to_string(), None, 0);
         valq.delayed_msgs_mut()
@@ -169,7 +169,7 @@ mod tests {
 
     #[test]
     fn test_move_delayed_msgs_to_main_q_handles_empty_delayed_msgs() {
-        let mut valq = ValqType::new(None, None).unwrap();
+        let mut valq = ValqType::new("q", None, None).unwrap();
         let _ = handler(Some(&mut valq));
         assert_eq!(valq.delayed_msgs().len(), 0);
         assert!(valq.msgs().is_empty());
@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn test_move_delayed_msgs_to_main_q_does_not_move_non_ready_messages() {
-        let mut valq = ValqType::new(None, None).unwrap();
+        let mut valq = ValqType::new("q", None, None).unwrap();
         let msg = ValqMsg::new(1, "msg".to_string(), None, 0);
         valq.delayed_msgs_mut()
             .insert(msg.clone(), utils::now_as_seconds() + 10);

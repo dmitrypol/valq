@@ -20,10 +20,10 @@ mod tests {
             .with_context(|| "failed to connect to valkey server")?;
 
         let test: Vec<String> = redis::cmd("valq").query(&mut con)?;
-        assert_eq!(test.len(), 11);
+        assert_eq!(test.len(), 12);
 
         let test: Vec<String> = redis::cmd("valq").arg(&["help"]).query(&mut con)?;
-        assert_eq!(test.len(), 11);
+        assert_eq!(test.len(), 12);
 
         // missing arguments
         for command in vec![
@@ -278,11 +278,19 @@ mod tests {
             .query(&mut con);
         assert!(test.is_err());
 
-        // delete q1 and q2
+        let test: Vec<String> = redis::cmd("valq").arg(&["list"]).query(&mut con)?;
+        assert_eq!(test.len(), 2);
+        assert!(test.contains(&"q1".to_string()));
+        assert!(test.contains(&"q2".to_string()));
+
+        // delete queues
         let test: String = redis::cmd("valq").arg(&["delete", "q1"]).query(&mut con)?;
         assert_eq!(test, "deleted q");
-        let test: String = redis::cmd("valq").arg(&["delete", "q2"]).query(&mut con)?;
-        assert_eq!(test, "deleted q");
+        let test: Vec<String> = redis::cmd("valq").arg(&["list"]).query(&mut con)?;
+        assert_eq!(test.len(), 1);
+        redis::cmd("flushall").exec(&mut con)?;
+        let test: Vec<String> = redis::cmd("valq").arg(&["list"]).query(&mut con)?;
+        assert_eq!(test.len(), 0);
 
         redis::cmd("save").exec(&mut con)?;
         Ok(())

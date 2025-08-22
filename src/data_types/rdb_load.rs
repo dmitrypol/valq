@@ -24,7 +24,7 @@ pub(crate) extern "C" fn rdb_load(rdb: *mut RedisModuleIO, _encver: i32) -> *mut
     if rdb.is_null() {
         return std::ptr::null_mut();
     }
-    let mut valq = ValqType::new(None, None).unwrap_or_default();
+    let mut valq = ValqType::new("", None, None).unwrap_or_default();
 
     for loader in [
         load_valq_attributes,
@@ -45,6 +45,9 @@ pub(crate) extern "C" fn rdb_load(rdb: *mut RedisModuleIO, _encver: i32) -> *mut
 }
 
 fn load_valq_attributes(rdb: *mut RedisModuleIO, valq: &mut ValqType) -> Option<*mut c_void> {
+    let q_name = load_string(rdb).ok()?.to_string();
+    valq.set_name(q_name);
+
     valq.set_id_sequence(load_unsigned(rdb).ok()?);
 
     let visibility_timeout = load_unsigned(rdb).ok()?;

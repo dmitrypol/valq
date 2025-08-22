@@ -32,6 +32,8 @@ pub(crate) extern "C" fn rdb_save(rdb: *mut RedisModuleIO, value: *mut c_void) {
 }
 
 fn save_valq_attributes(rdb: *mut RedisModuleIO, item: &ValqType) {
+    // save name
+    save_string(rdb, item.name().as_str());
     // save id_sequence
     save_unsigned(rdb, *item.id_sequence());
     // save visibility_timeout

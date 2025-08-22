@@ -19,6 +19,7 @@ valq - top level command
 valq create - create new q
 valq delete - delete q
 valq update - update q
+valq list - list all queues
 valq info - info about q
 valq purge - purge messages in q, dlq or delayed q
 valq push - push message to q, optionally with delay

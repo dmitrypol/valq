@@ -1,7 +1,7 @@
 use crate::data_types::VALQ_TYPE;
 use crate::structs::valq_type::ValqType;
 use crate::utils::replicate_cmd_check;
-use crate::{DELIVERY_ATTEMPTS_DEFAULT, VISIBILITY_TIMEOUT_DEFAULT};
+use crate::{DELIVERY_ATTEMPTS_DEFAULT, GLOBAL_Q_LIST, VISIBILITY_TIMEOUT_DEFAULT};
 use valkey_module::{Context, NextArg, ValkeyError, ValkeyResult, ValkeyString};
 
 pub(crate) fn create(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
@@ -25,10 +25,13 @@ pub(crate) fn create(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
         None => {
             // create a new queue
             let valq = ValqType::new(
+                key_arg.to_string().as_str(),
                 Some(visibility_timeout_arg),
                 Some(max_delivery_attempts_arg),
             )?;
             key.set_value(&VALQ_TYPE, valq)?;
+            let mut q_list = GLOBAL_Q_LIST.write()?;
+            q_list.insert(key_arg.to_string());
             Ok("created q".into())
         }
     }
