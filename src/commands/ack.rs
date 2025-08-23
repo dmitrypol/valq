@@ -30,7 +30,7 @@ fn handler(msg_id_arg: u64, value: Option<&mut ValqType>) -> ValkeyResult {
                 .filter(|(_index, msg)| *msg.id() == msg_id_arg)
             {
                 msgs.remove(index);
-                return Ok("ack".into());
+                return Ok(format!("ack {}", msg_id_arg).into());
             }
             Err(ValkeyError::String(format!(
                 "message not found with id {}",
@@ -68,7 +68,7 @@ mod tests {
             .push_back(ValqMsg::new(2, "msg2".to_string(), None, 0));
 
         let test = handler(1, Some(&mut valq));
-        assert_eq!(test.unwrap(), ValkeyValue::BulkString("ack".to_string()));
+        assert_eq!(test.unwrap(), ValkeyValue::BulkString("ack 1".to_string()));
         assert_eq!(valq.msgs_mut().len(), 1);
         assert_eq!(valq.dlq_msgs_mut().len(), 0);
 
@@ -85,7 +85,10 @@ mod tests {
                 .push_back(ValqMsg::new(i, format!("msg{}", i), None, 0));
         }
         let test = handler(5_000, Some(&mut valq));
-        assert_eq!(test.unwrap(), ValkeyValue::BulkString("ack".to_string()));
+        assert_eq!(
+            test.unwrap(),
+            ValkeyValue::BulkString("ack 5000".to_string())
+        );
         let msg = valq.msgs_mut().iter().find(|msg| *msg.id() == 5_000);
         assert!(msg.is_none());
     }

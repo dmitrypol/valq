@@ -68,13 +68,13 @@ mod tests {
         let test: String = redis::cmd("valq")
             .arg(&["create", "q1", "1", "2", "300"])
             .query(&mut con)?;
-        assert_eq!(test, "created q");
+        assert_eq!(test, "created q1");
         // duplicate queue name, should fail
         let test: RedisResult<String> = redis::cmd("valq").arg(&["create", "q1"]).query(&mut con);
         assert!(test.is_err());
         // create another queue with default visibility timeout and max_delivery_attempts
         let test: String = redis::cmd("valq").arg(&["create", "q2"]).query(&mut con)?;
-        assert_eq!(test, "created q");
+        assert_eq!(test, "created q2");
 
         // pop from empty queue
         let test: String = redis::cmd("valq").arg(&["pop", "q1"]).query(&mut con)?;
@@ -225,7 +225,7 @@ mod tests {
         let test: String = redis::cmd("valq")
             .arg(&["ack", "q1", "3"])
             .query(&mut con)?;
-        assert_eq!(test, "ack");
+        assert_eq!(test, "ack 3");
         // ack invalid message id
         let test: RedisResult<String> = redis::cmd("valq")
             .arg(&["ack", "q1", "invalid-id"])
@@ -293,7 +293,7 @@ mod tests {
 
         // delete queues
         let test: String = redis::cmd("valq").arg(&["delete", "q1"]).query(&mut con)?;
-        assert_eq!(test, "deleted q");
+        assert_eq!(test, "deleted q1");
         let test: Vec<String> = redis::cmd("valq").arg(&["list"]).query(&mut con)?;
         assert_eq!(test.len(), 1);
         redis::cmd("flushall").exec(&mut con)?;
