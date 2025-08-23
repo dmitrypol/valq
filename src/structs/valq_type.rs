@@ -8,7 +8,7 @@ use getset::{Getters, MutGetters, Setters};
 use std::collections::VecDeque;
 use valkey_module::ValkeyError;
 
-/// Represents a job queue with configurable visibility timeout and maximum delivery attempts.
+/// Represents a job queue with configurable visibility timeout, delivery attempts and retention period.
 /// This structure manages a queue of messages, delayed messages and a dead-letter queue for failed messages.
 #[derive(Debug, Clone, Getters, Setters, MutGetters, Default)]
 pub(crate) struct ValqType {
@@ -21,9 +21,10 @@ pub(crate) struct ValqType {
     /// Visibility timeout for messages in seconds.
     #[getset(get = "pub")]
     visibility_timeout: u64,
-    /// Maximum number of delivery attempts for a message before moving it to the dead-letter queue.
+    /// Maximum number of delivery attempts for a message before moving it to the DLQ.
     #[getset(get = "pub")]
     max_delivery_attempts: u64,
+    /// Retention period untill messages in the DLQ are removed via BG thread, in seconds.
     #[getset(get = "pub")]
     retention_period: u64,
     /// Queue of messages currently being processed.

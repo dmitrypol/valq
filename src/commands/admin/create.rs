@@ -23,7 +23,7 @@ pub(crate) fn create(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     match value {
         Some(_) => {
             // queue already exists
-            Err(ValkeyError::Str("q exists"))
+            Err(ValkeyError::String(format!("{} exists", key_arg)))
         }
         None => {
             // create a new queue
@@ -36,7 +36,7 @@ pub(crate) fn create(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
             key.set_value(&VALQ_TYPE, valq)?;
             let mut q_list = GLOBAL_Q_LIST.write()?;
             q_list.insert(key_arg.to_string());
-            Ok("created q".into())
+            Ok(format!("created {}", key_arg).into())
         }
     }
 }

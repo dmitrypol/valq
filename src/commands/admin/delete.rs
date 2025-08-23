@@ -13,8 +13,11 @@ pub(crate) fn delete(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
         Ok(_) => {
             let mut q_list = GLOBAL_Q_LIST.write()?;
             q_list.remove(&key_arg.to_string());
-            Ok("deleted q".into())
+            Ok(format!("deleted {}", key_arg).into())
         }
-        Err(err) => Err(ValkeyError::String(format!("delete q failed: {}", err))),
+        Err(err) => Err(ValkeyError::String(format!(
+            "failed delete {}: {}",
+            key_arg, err
+        ))),
     }
 }

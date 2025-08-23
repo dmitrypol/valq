@@ -9,7 +9,7 @@ use valkey_module::{Context, NextArg, ValkeyError, ValkeyResult, ValkeyString};
 pub(crate) fn extend(ctx: &Context, args: Vec<ValkeyString>) -> ValkeyResult {
     replicate_cmd_check(ctx)?;
     if args.len() != 3 {
-        return Err(ValkeyError::Str("specify q name and message ID"));
+        return Err(ValkeyError::Str("specify q name, message ID and seconds"));
     }
     let mut args = args.into_iter();
     let key_arg = args.next_arg()?;

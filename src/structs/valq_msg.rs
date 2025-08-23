@@ -14,7 +14,7 @@ pub(crate) struct ValqMsg {
     #[getset(get = "pub")]
     body: String,
 
-    /// Optional timeout timestamp (in seconds) indicating when the message expires.
+    /// timestamp (in seconds) indicating when the message becomes available to another consumer.
     #[getset(get = "pub", set = "pub")]
     timeout_at: Option<u64>,
 

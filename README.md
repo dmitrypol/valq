@@ -11,6 +11,7 @@ This project is designed to provide a lightweight and efficient job queue system
 * on message completion consumer does explicit ack specifying the message ID which removed the message from the queue
 * max delivery attempts - the maximum number of times a message can be delivered to consumers before it is moved to the dead letter queue (DLQ)
 * dead letter queue - store messages that failed to be processed after the maximum number of delivery attempts
+* retention period - how long messages are kept in the DLQ before they are automatically deleted
 * delayed message delivery - push messages to the queue with optional delay in seconds
 
 ## Commands
